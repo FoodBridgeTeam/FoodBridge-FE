@@ -1,27 +1,48 @@
 import { describe, expect, it } from "vitest";
 
-import { PUKYONG_DAEYEON_COORDINATES } from "@/features/foods/constants";
+import { BOBEUM_HOME_COORDINATES } from "@/features/foods/constants";
 import { parseReceiverProfile } from "@/features/matching/receiver-profile";
 
 describe("parseReceiverProfile", () => {
-  it("uses the Pukyong Daeyeon demo coordinates by default", () => {
+  it("uses the BobEum demo pet profile and coordinates by default", () => {
     expect(parseReceiverProfile({})).toEqual({
-      ...PUKYONG_DAEYEON_COORDINATES,
-      preferredCategory: null,
+      ...BOBEUM_HOME_COORDINATES,
+      age: null,
+      allergies: [],
+      conditionNote: null,
+      isPrescriptionDiet: false,
+      name: "콩이",
+      petId: "demo-kongi",
+      species: "dog",
+      weight: null,
     });
   });
 
-  it("accepts valid static coordinates and a preferred category", () => {
+  it("accepts valid coordinates and pet profile values", () => {
     expect(
       parseReceiverProfile({
+        age: "5",
+        allergies: "닭고기, 밀",
+        condition_note: "피부가 예민함",
+        is_prescription_diet: "true",
         latitude: "35.1796",
         longitude: "129.0756",
-        preferred_category: "채소",
+        pet_id: "demo",
+        pet_name: "나비",
+        species: "cat",
+        weight: "4.2",
       }),
     ).toEqual({
+      age: 5,
+      allergies: ["닭고기", "밀"],
+      conditionNote: "피부가 예민함",
+      isPrescriptionDiet: true,
       latitude: 35.1796,
       longitude: 129.0756,
-      preferredCategory: "채소",
+      name: "나비",
+      petId: "demo",
+      species: "cat",
+      weight: 4.2,
     });
   });
 
@@ -31,6 +52,6 @@ describe("parseReceiverProfile", () => {
         latitude: "100",
         longitude: "-200",
       }),
-    ).toMatchObject(PUKYONG_DAEYEON_COORDINATES);
+    ).toMatchObject(BOBEUM_HOME_COORDINATES);
   });
 });

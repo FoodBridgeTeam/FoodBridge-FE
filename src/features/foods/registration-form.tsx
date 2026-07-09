@@ -16,17 +16,17 @@ import {
   registerFood,
 } from "@/features/foods/actions";
 import {
+  BOBEUM_HOME_COORDINATES,
   DEMO_PICKUP_LOCATIONS,
-  FOOD_IMAGE_ACCEPTED_TYPES,
-  PUKYONG_DAEYEON_COORDINATES,
+  ITEM_CATEGORY_OPTIONS,
+  ITEM_IMAGE_ACCEPTED_TYPES,
+  TARGET_SPECIES_OPTIONS,
 } from "@/features/foods/constants";
-import type { FoodImageAnalysis } from "@/features/foods/image-analysis";
+import type { ItemImageAnalysis } from "@/features/foods/image-analysis";
 import {
   type FoodRegistrationField,
   type FoodRegistrationFieldErrors,
 } from "@/features/foods/registration-schema";
-import { BarcodeScanner } from "@/features/foods/barcode-scanner";
-import { parseGS1Barcode } from "@/features/foods/barcode";
 import { useLocationSelection } from "@/hooks/use-location-selection";
 
 type FieldProps = {
@@ -37,8 +37,6 @@ type FieldProps = {
 };
 
 function Field({ children, error, label, name }: FieldProps) {
-  const errorId = `${name}-error`;
-
   return (
     <div>
       <label
@@ -49,9 +47,7 @@ function Field({ children, error, label, name }: FieldProps) {
       </label>
       {children}
       {error ? (
-        <p className="mt-2 text-sm font-medium text-rose-700" id={errorId}>
-          {error}
-        </p>
+        <p className="mt-2 text-sm font-medium text-rose-700">{error}</p>
       ) : null}
     </div>
   );
@@ -66,7 +62,7 @@ function SubmitButton() {
       disabled={pending}
       type="submit"
     >
-      {pending ? "등록하고 있어요..." : "식품 등록하기"}
+      {pending ? "나눔을 등록하고 있어요..." : "나눔 등록하기"}
     </button>
   );
 }
@@ -82,7 +78,7 @@ const INITIAL_FOOD_REGISTRATION_STATE: FoodRegistrationState = {
 type AnalysisState =
   | { status: "idle"; message: ""; result: null }
   | { status: "loading"; message: string; result: null }
-  | { status: "success"; message: string; result: FoodImageAnalysis }
+  | { status: "success"; message: string; result: ItemImageAnalysis }
   | { status: "error"; message: string; result: null };
 
 function firstError(
@@ -92,21 +88,20 @@ function firstError(
   return errors?.[field]?.[0];
 }
 
-function toDatetimeLocalValue(isoDate: string | null) {
-  if (!isoDate) {
-    return "";
-  }
+function toDatetimeLocalValue(isoDate: string | null | undefined) {
+  if (!isoDate) return "";
 
   const date = new Date(isoDate);
-
-  if (Number.isNaN(date.getTime())) {
-    return "";
-  }
+  if (Number.isNaN(date.getTime())) return "";
 
   const timezoneOffsetMs = date.getTimezoneOffset() * 60_000;
   return new Date(date.getTime() - timezoneOffsetMs)
     .toISOString()
     .slice(0, 16);
+}
+
+function createPreviewUrl(file: File | null) {
+  return file ? URL.createObjectURL(file) : null;
 }
 
 export function FoodRegistrationForm() {
@@ -115,108 +110,77 @@ export function FoodRegistrationForm() {
     INITIAL_FOOD_REGISTRATION_STATE,
   );
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [ingredientPreviewUrl, setIngredientPreviewUrl] = useState<
+    string | null
+  >(null);
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [selectedIngredientImage, setSelectedIngredientImage] =
+    useState<File | null>(null);
   const [analysis, setAnalysis] = useState<AnalysisState>({
     status: "idle",
     message: "",
     result: null,
   });
   const [name, setName] = useState("");
-  const [quantity, setQuantity] = useState("");
+  const [brand, setBrand] = useState("");
+  const [category, setCategory] = useState("dry_food");
+  const [targetSpecies, setTargetSpecies] = useState("both");
+  const [remainingAmount, setRemainingAmount] = useState("");
+  const [opened, setOpened] = useState(false);
+  const [openedAt, setOpenedAt] = useState("");
   const [expiryDate, setExpiryDate] = useState("");
-  const [category, setCategory] = useState("");
-  const location = useLocationSelection(PUKYONG_DAEYEON_COORDINATES);
-  const [isScannerOpen, setIsScannerOpen] = useState(false);
-  const [manualBarcode, setManualBarcode] = useState("");
+  const [ingredients, setIngredients] = useState("");
+  const [lifeStage, setLifeStage] = useState("");
+  const [storageNote, setStorageNote] = useState("");
+  const location = useLocationSelection(BOBEUM_HOME_COORDINATES);
 
-  function handleBarcodeScanSuccess(decodedText: string) {
-    setIsScannerOpen(false);
-    const parsed = parseGS1Barcode(decodedText);
-    if (parsed) {
-      setName(parsed.name);
-      setCategory(parsed.category);
-      if (parsed.expiryDate) {
-        setExpiryDate(parsed.expiryDate);
-      }
-      setQuantity("1");
-      setAnalysis({
-        status: "success",
-        message: `바코드(${parsed.barcode}) 스캔 완료! 상품 정보 및 유통기한을 자동 입력했습니다.`,
-        result: {
-          name: parsed.name,
-          category: parsed.category as
-            | "간편식"
-            | "베이커리"
-            | "음료"
-            | "신선식품"
-            | "유제품"
-            | "기타",
-          expiry_date: parsed.expiryDate
-            ? new Date(parsed.expiryDate).toISOString()
-            : null,
-          quantity: 1,
-          storage: "냉장",
-          ready_to_eat: true,
-          confidence: 1.0,
-          notes: "GS1 DataMatrix 바코드 파싱 성공",
-        },
-      });
-    } else {
-      setAnalysis({
-        status: "error",
-        message: `스캔된 바코드(${decodedText})는 데모 상품 딕셔너리에 존재하지 않습니다. 수동 등록하거나 사진 AI 분석을 시도해 주세요.`,
-        result: null,
-      });
-    }
-  }
-
-  function handleManualBarcodeSubmit() {
-    const trimmedBarcode = manualBarcode.trim();
-    if (!trimmedBarcode) {
-      setAnalysis({
-        status: "error",
-        message: "바코드 번호를 입력한 뒤 적용해 주세요.",
-        result: null,
-      });
-      return;
-    }
-
-    handleBarcodeScanSuccess(trimmedBarcode);
-  }
+  const errors = state.fieldErrors;
 
   useEffect(() => {
     return () => {
-      if (previewUrl) {
-        URL.revokeObjectURL(previewUrl);
-      }
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+      if (ingredientPreviewUrl) URL.revokeObjectURL(ingredientPreviewUrl);
     };
-  }, [previewUrl]);
+  }, [previewUrl, ingredientPreviewUrl]);
 
   function handleImageChange(event: ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
-    setSelectedImage(file ?? null);
+    const file = event.target.files?.[0] ?? null;
+    setSelectedImage(file);
+    setPreviewUrl((currentUrl) => {
+      if (currentUrl) URL.revokeObjectURL(currentUrl);
+      return createPreviewUrl(file);
+    });
     setAnalysis({ status: "idle", message: "", result: null });
-    setPreviewUrl(file ? URL.createObjectURL(file) : null);
+  }
+
+  function handleIngredientImageChange(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0] ?? null;
+    setSelectedIngredientImage(file);
+    setIngredientPreviewUrl((currentUrl) => {
+      if (currentUrl) URL.revokeObjectURL(currentUrl);
+      return createPreviewUrl(file);
+    });
   }
 
   async function handleAnalyzeImage() {
-    if (!selectedImage) {
+    const analysisTarget = selectedImage ?? selectedIngredientImage;
+
+    if (!analysisTarget) {
       setAnalysis({
         status: "error",
-        message: "먼저 분석할 식품 사진을 선택해 주세요.",
+        message: "먼저 분석할 제품 사진을 선택해 주세요.",
         result: null,
       });
       return;
     }
 
+    const formData = new FormData();
+    formData.append("image", analysisTarget);
     setAnalysis({
       status: "loading",
-      message: "AI가 사진에서 식품 정보를 읽고 있어요...",
+      message: "Gemini가 제품명, 대상 동물, 성분표를 읽고 있어요...",
       result: null,
     });
-
-    const formData = new FormData();
-    formData.set("image", selectedImage);
 
     try {
       const response = await fetch("/api/foods/analyze-image", {
@@ -224,48 +188,37 @@ export function FoodRegistrationForm() {
         method: "POST",
       });
       const payload = (await response.json()) as {
-        analysis?: FoodImageAnalysis;
-        message?: string;
+        analysis?: ItemImageAnalysis;
+        error?: string;
       };
 
       if (!response.ok || !payload.analysis) {
-        throw new Error(payload.message ?? "AI 사진 분석에 실패했습니다.");
+        throw new Error(payload.error ?? "AI 분석에 실패했습니다.");
       }
 
-      const nextExpiryDate = toDatetimeLocalValue(
-        payload.analysis.expiry_date,
-      );
-
-      if (payload.analysis.name) {
-        setName(payload.analysis.name);
-      }
-
-      if (payload.analysis.quantity) {
-        setQuantity(String(payload.analysis.quantity));
-      }
-
-      if (payload.analysis.category) {
-        setCategory(payload.analysis.category);
-      }
-
-      if (nextExpiryDate) {
-        setExpiryDate(nextExpiryDate);
-      }
-
+      const result = payload.analysis;
       setAnalysis({
         status: "success",
-        message: nextExpiryDate
-          ? "AI 분석 결과를 입력칸에 반영했습니다. 등록 전 한 번만 확인해 주세요."
-          : "AI 분석 결과를 반영했습니다. 유통기한은 사진에서 확실히 보이지 않아 직접 입력해 주세요.",
-        result: payload.analysis,
+        message:
+          "AI 분석값을 입력칸에 반영했습니다. 등록 전 성분과 유통기한을 꼭 확인해 주세요.",
+        result,
       });
+      setName(result.name ?? "");
+      setBrand(result.brand ?? "");
+      setCategory(result.category ?? "unknown");
+      setTargetSpecies(result.targetSpecies ?? "both");
+      setRemainingAmount(result.remainingAmount ?? "");
+      setOpened(result.opened ?? false);
+      setExpiryDate(toDatetimeLocalValue(result.expiryDateCandidate));
+      setIngredients(result.ingredients.join(", "));
+      setLifeStage(result.lifeStage ?? "");
     } catch (error) {
       setAnalysis({
         status: "error",
         message:
           error instanceof Error
             ? error.message
-            : "AI 사진 분석에 실패했습니다.",
+            : "AI 사진 분석에 실패했습니다. 잠시 후 다시 시도해 주세요.",
         result: null,
       });
     }
@@ -284,330 +237,412 @@ export function FoodRegistrationForm() {
     }
   }
 
+  async function handleUseCurrentLocation() {
+    await location.useCurrentLocation();
+  }
+
   if (state.status === "success") {
     return (
-      <section className="rounded-[2rem] border border-emerald-200 bg-white p-8 text-center shadow-sm md:p-12">
+      <section className="animate-fade-up rounded-[2rem] border border-emerald-200 bg-white p-8 text-center shadow-xl shadow-emerald-950/10">
         <div className="mx-auto flex size-16 items-center justify-center rounded-full bg-emerald-100 text-3xl">
-          ✓
+          🐾
         </div>
-        <h2 className="mt-6 text-3xl font-black text-emerald-950">
-          등록 완료
+        <h2 className="mt-5 text-3xl font-black text-emerald-950">
+          나눔 등록 완료!
         </h2>
-        <p className="mx-auto mt-3 max-w-md leading-7 text-slate-600">
-          {state.message}
-        </p>
-        <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
-          <button
-            className="rounded-xl bg-emerald-700 px-5 py-3 font-bold text-white hover:bg-emerald-800"
-            onClick={() => window.location.reload()}
-            type="button"
-          >
-            다른 식품 등록
-          </button>
+        <p className="mt-3 text-slate-600">{state.message}</p>
+        <div className="mt-8 flex flex-wrap justify-center gap-3">
           <Link
-            className="rounded-xl border border-emerald-900/15 px-5 py-3 font-bold text-emerald-900 hover:bg-emerald-50"
-            href="/"
+            className="rounded-full bg-emerald-700 px-5 py-3 text-sm font-black text-white shadow-lg shadow-emerald-900/15"
+            href="/foods"
           >
-            홈으로 돌아가기
+            추천 목록 보기
+          </Link>
+          <Link
+            className="rounded-full bg-emerald-50 px-5 py-3 text-sm font-black text-emerald-800"
+            href="/foods/new"
+          >
+            다른 나눔 등록
           </Link>
         </div>
       </section>
     );
   }
 
-  const errors = state.fieldErrors;
-
   return (
-    <form
-      action={formAction}
-      className="surface-card animate-fade-up-delay-1 space-y-7 rounded-[2.25rem] p-6 md:p-10"
-    >
-      <section className="rounded-[1.75rem] border border-emerald-900/10 bg-gradient-to-br from-emerald-50 to-orange-50/70 p-5">
-        <div className="mb-4">
-          <p className="text-xs font-black tracking-[0.16em] text-emerald-700 uppercase">
-            Step 1 · AI & Barcode registration helper
-          </p>
-          <h2 className="mt-2 text-2xl font-black text-emerald-950">
-            사진 또는 바코드로 먼저 등록하기
-          </h2>
-          <p className="mt-2 text-sm leading-6 text-slate-600">
-            식품 사진을 업로드해 AI 분석을 실행하거나 편의점 식품의 바코드를
-            스캔하면 제품명과 유통기한이 자동으로 입력됩니다.
-          </p>
+    <form action={formAction} className="space-y-8">
+      <section className="animate-fade-up rounded-[2rem] border border-emerald-200 bg-gradient-to-br from-emerald-50 via-white to-orange-50 p-6 shadow-sm md:p-8">
+        <p className="text-sm font-black tracking-[0.2em] text-emerald-700 uppercase">
+          Step 1 · AI registration helper
+        </p>
+        <h2 className="mt-2 text-3xl font-black text-emerald-950">
+          사진으로 먼저 등록하기
+        </h2>
+        <p className="mt-3 text-slate-600">
+          제품 사진을 올리면 AI가 이름, 브랜드, 수량, 대상 동물, 성분,
+          유통기한 후보를 자동으로 채웁니다.
+        </p>
+
+        <div className="mt-6 grid gap-5 lg:grid-cols-[1.2fr_0.8fr]">
+          <Field error={firstError(errors, "image")} label="제품 사진" name="image">
+            <input
+              accept={ITEM_IMAGE_ACCEPTED_TYPES.join(",")}
+              className={inputClassName}
+              id="image"
+              name="image"
+              onChange={handleImageChange}
+              required
+              type="file"
+            />
+            {previewUrl ? (
+              <div className="relative mt-4 h-72 overflow-hidden rounded-[1.5rem] border border-dashed border-emerald-900/20 bg-white">
+                <Image
+                  alt="선택한 제품 사진 미리보기"
+                  className="object-cover"
+                  fill
+                  src={previewUrl}
+                />
+              </div>
+            ) : null}
+          </Field>
+
+          <Field
+            error={firstError(errors, "ingredient_image")}
+            label="성분표 사진(선택)"
+            name="ingredient_image"
+          >
+            <input
+              accept={ITEM_IMAGE_ACCEPTED_TYPES.join(",")}
+              className={inputClassName}
+              id="ingredient_image"
+              name="ingredient_image"
+              onChange={handleIngredientImageChange}
+              type="file"
+            />
+            {ingredientPreviewUrl ? (
+              <div className="relative mt-4 h-44 overflow-hidden rounded-[1.5rem] border border-dashed border-orange-900/20 bg-white">
+                <Image
+                  alt="선택한 성분표 사진 미리보기"
+                  className="object-cover"
+                  fill
+                  src={ingredientPreviewUrl}
+                />
+              </div>
+            ) : null}
+          </Field>
         </div>
 
-        <Field error={firstError(errors, "image")} label="식품 사진" name="image">
-          <label
-            className="relative flex min-h-80 cursor-pointer items-center justify-center overflow-hidden rounded-[1.5rem] border-2 border-dashed border-emerald-900/20 bg-white p-6 text-center shadow-inner transition hover:-translate-y-0.5 hover:border-orange-400 hover:bg-orange-50/30"
-            htmlFor="image"
-          >
-            {previewUrl ? (
-              <Image
-                alt="선택한 식품 사진 미리보기"
-                className="object-cover"
-                fill
-                src={previewUrl}
-                unoptimized
-              />
-            ) : (
-              <span>
-                <strong className="block text-lg text-emerald-900">
-                  사진을 눌러 선택하세요
-                </strong>
-                <span className="mt-2 block text-sm text-slate-500">
-                  JPEG, PNG, WebP · 최대 5MB
-                </span>
-              </span>
-            )}
-          </label>
-          <input
-            accept={FOOD_IMAGE_ACCEPTED_TYPES.join(",")}
-            aria-describedby="image-error"
-            className="sr-only"
-            id="image"
-            name="image"
-            onChange={handleImageChange}
-            required
-            type="file"
-          />
-        </Field>
-
-        <div className="mt-5 space-y-4 rounded-2xl border border-emerald-900/10 bg-white/90 p-5 shadow-sm">
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="rounded-xl border border-emerald-100 bg-emerald-50/20 p-4">
-              <p className="text-sm font-black text-emerald-950">
-                방법 A. AI 사진 분석
+        <div className="mt-6 rounded-3xl bg-white p-5 shadow-sm">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h3 className="font-black text-emerald-950">AI 사진 분석</h3>
+              <p className="mt-1 text-sm leading-6 text-slate-600">
+                Gemini가 사진을 보고 등록값을 제안합니다. 안전을 위해 최종
+                등록 전 보호자가 직접 확인해 주세요.
               </p>
-              <p className="mt-1 text-xs leading-5 text-slate-600">
-                선택한 식품 사진을 Gemini가 인식하여 이름, 수량, 유통기한 후보를
-                자동 입력합니다.
-              </p>
-              <button
-                className="mt-3 w-full rounded-xl bg-orange-500 py-2.5 text-xs font-black text-white shadow-md shadow-orange-500/15 transition hover:-translate-y-0.5 hover:bg-orange-600 disabled:cursor-wait disabled:opacity-60"
-                disabled={analysis.status === "loading"}
-                onClick={handleAnalyzeImage}
-                type="button"
-              >
-                {analysis.status === "loading"
-                  ? "AI 분석 중..."
-                  : "AI 사진 분석 실행"}
-              </button>
             </div>
-
-            <div className="rounded-xl border border-sky-100 bg-sky-50/20 p-4">
-              <p className="text-sm font-black text-emerald-950">
-                방법 B. 편의점 바코드 카메라 스캔
-              </p>
-              <p className="mt-1 text-xs leading-5 text-slate-600">
-                편의점 신선 식품(도시락, 삼각김밥 등)의 2D 바코드를 찍어 즉시
-                유통기한을 연동합니다. 가까이 대기보다 15~25cm 떨어뜨려
-                초점을 맞추는 편이 안정적입니다.
-              </p>
-              <button
-                className="mt-3 w-full rounded-xl bg-emerald-700 py-2.5 text-xs font-black text-white shadow-md shadow-emerald-900/15 transition hover:-translate-y-0.5 hover:bg-emerald-800"
-                onClick={() => setIsScannerOpen(true)}
-                type="button"
-              >
-                🎥 바코드 스캐너 열기
-              </button>
-              <div className="mt-3 rounded-xl border border-slate-200 bg-white/85 p-3">
-                <label
-                  className="text-xs font-black text-slate-600"
-                  htmlFor="manualBarcode"
-                >
-                  카메라 실패 시 바코드 직접 입력
-                </label>
-                <div className="mt-2 flex gap-2">
-                  <input
-                    className="min-w-0 flex-1 rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100"
-                    id="manualBarcode"
-                    inputMode="numeric"
-                    onChange={(event) => setManualBarcode(event.target.value)}
-                    placeholder="예: 010880100707742117260712"
-                    type="text"
-                    value={manualBarcode}
-                  />
-                  <button
-                    className="shrink-0 rounded-lg bg-slate-900 px-3 py-2 text-xs font-black text-white transition hover:bg-slate-700"
-                    onClick={handleManualBarcodeSubmit}
-                    type="button"
-                  >
-                    적용
-                  </button>
-                </div>
-              </div>
-            </div>
+            <button
+              className="rounded-2xl bg-orange-500 px-6 py-3 text-sm font-black text-white shadow-lg shadow-orange-500/20 transition hover:-translate-y-0.5 hover:bg-orange-600 disabled:cursor-wait disabled:opacity-60"
+              disabled={analysis.status === "loading"}
+              onClick={handleAnalyzeImage}
+              type="button"
+            >
+              {analysis.status === "loading" ? "분석 중..." : "AI로 사진 분석"}
+            </button>
           </div>
-
-          <div className="border-t border-slate-100 pt-3">
-            <p className="text-xs font-bold text-slate-500">
-              대회 시연용 원클릭 바코드 프리셋
-            </p>
-            <div className="mt-2 flex flex-wrap gap-2">
-              <button
-                className="rounded-lg bg-slate-100 px-2.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-200"
-                onClick={() =>
-                  handleBarcodeScanSuccess("010880100707742117260712")
-                }
-                type="button"
-              >
-                🍙 참치마요 삼각김밥 모의 스캔
-              </button>
-              <button
-                className="rounded-lg bg-slate-100 px-2.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-200"
-                onClick={() =>
-                  handleBarcodeScanSuccess("010880106840215617260712")
-                }
-                type="button"
-              >
-                🍱 백종원 제육도시락 모의 스캔
-              </button>
-              <button
-                className="rounded-lg bg-slate-100 px-2.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-200"
-                onClick={() =>
-                  handleBarcodeScanSuccess("010880111511415517260712")
-                }
-                type="button"
-                // 01(AI) + 08801115114155(GTIN) + 17(AI) + 260712(YYMMDD)
-              >
-                🥪 인기 아이돌 샌드위치 모의 스캔
-              </button>
-            </div>
-          </div>
-
           {analysis.message ? (
             <p
               className={
                 analysis.status === "error"
-                  ? "mt-3 text-sm font-semibold text-rose-700"
-                  : "mt-3 text-sm font-semibold text-emerald-800"
+                  ? "mt-4 text-sm font-bold text-rose-700"
+                  : "mt-4 text-sm font-bold text-emerald-800"
               }
               role="status"
             >
               {analysis.message}
             </p>
           ) : null}
-
-          {analysis.result ? (
-            <dl className="mt-4 grid gap-3 rounded-2xl bg-emerald-50 p-4 text-sm text-slate-700 md:grid-cols-3">
-              <div>
-                <dt className="font-bold text-emerald-950">보관</dt>
-                <dd className="mt-1">
-                  {analysis.result.storage ?? "알 수 없음"}
-                </dd>
-              </div>
-              <div>
-                <dt className="font-bold text-emerald-950">바로 섭취</dt>
-                <dd className="mt-1">
-                  {analysis.result.ready_to_eat === null
-                    ? "알 수 없음"
-                    : analysis.result.ready_to_eat
-                      ? "가능"
-                      : "확인 필요"}
-                </dd>
-              </div>
-              <div>
-                <dt className="font-bold text-emerald-950">신뢰도</dt>
-                <dd className="mt-1">
-                  {Math.round(analysis.result.confidence * 100)}%
-                </dd>
-              </div>
-              {analysis.result.notes ? (
-                <div className="md:col-span-3">
-                  <dt className="font-bold text-emerald-950">AI 메모</dt>
-                  <dd className="mt-1">{analysis.result.notes}</dd>
-                </div>
-              ) : null}
-            </dl>
-          ) : null}
         </div>
       </section>
 
-      <section>
-        <p className="text-xs font-black tracking-[0.16em] text-emerald-700 uppercase">
+      <section className="animate-fade-up-delay-1 rounded-[2rem] bg-white p-6 shadow-xl shadow-emerald-950/10 md:p-8">
+        <p className="text-sm font-black tracking-[0.2em] text-emerald-700 uppercase">
           Step 2 · Review and submit
         </p>
-        <h2 className="mt-2 text-2xl font-black text-emerald-950">
+        <h2 className="mt-2 text-3xl font-black text-emerald-950">
           입력값 확인하기
         </h2>
-        <p className="mt-2 text-sm leading-6 text-slate-600">
-          AI가 채운 값은 제안일 뿐입니다. 식품명, 유통기한, 카테고리를 확인한
-          뒤 필요한 값만 수정해 주세요.
-        </p>
+
+        <input
+          name="ai_analysis"
+          type="hidden"
+          value={analysis.result ? JSON.stringify(analysis.result) : ""}
+        />
+
+        <div className="mt-6 grid gap-5 md:grid-cols-2">
+          <Field error={firstError(errors, "name")} label="물품명" name="name">
+            <input
+              className={inputClassName}
+              id="name"
+              maxLength={100}
+              name="name"
+              onChange={(event) => setName(event.target.value)}
+              placeholder="예: 로얄캐닌 미니 인도어 어덜트"
+              required
+              type="text"
+              value={name}
+            />
+          </Field>
+
+          <Field error={firstError(errors, "brand")} label="브랜드" name="brand">
+            <input
+              className={inputClassName}
+              id="brand"
+              maxLength={80}
+              name="brand"
+              onChange={(event) => setBrand(event.target.value)}
+              placeholder="예: 로얄캐닌"
+              type="text"
+              value={brand}
+            />
+          </Field>
+
+          <Field
+            error={firstError(errors, "category")}
+            label="카테고리"
+            name="category"
+          >
+            <select
+              className={inputClassName}
+              id="category"
+              name="category"
+              onChange={(event) => setCategory(event.target.value)}
+              required
+              value={category}
+            >
+              {ITEM_CATEGORY_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </Field>
+
+          <Field
+            error={firstError(errors, "target_species")}
+            label="대상 동물"
+            name="target_species"
+          >
+            <select
+              className={inputClassName}
+              id="target_species"
+              name="target_species"
+              onChange={(event) => setTargetSpecies(event.target.value)}
+              required
+              value={targetSpecies}
+            >
+              {TARGET_SPECIES_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </Field>
+
+          <Field
+            error={firstError(errors, "remaining_amount")}
+            label="남은 양"
+            name="remaining_amount"
+          >
+            <input
+              className={inputClassName}
+              id="remaining_amount"
+              maxLength={80}
+              name="remaining_amount"
+              onChange={(event) => setRemainingAmount(event.target.value)}
+              placeholder="예: 2kg 중 1.2kg 남음 / 3개"
+              required
+              type="text"
+              value={remainingAmount}
+            />
+          </Field>
+
+          <Field
+            error={firstError(errors, "expiry_date")}
+            label="유통기한"
+            name="expiry_date"
+          >
+            <input
+              className={inputClassName}
+              id="expiry_date"
+              name="expiry_date"
+              onChange={(event) => setExpiryDate(event.target.value)}
+              type="datetime-local"
+              value={expiryDate}
+            />
+          </Field>
+
+          <Field
+            error={firstError(errors, "opened_at")}
+            label="개봉일"
+            name="opened_at"
+          >
+            <input
+              className={inputClassName}
+              disabled={!opened}
+              id="opened_at"
+              name="opened_at"
+              onChange={(event) => setOpenedAt(event.target.value)}
+              type="datetime-local"
+              value={openedAt}
+            />
+          </Field>
+
+          <label className="flex items-center gap-3 rounded-2xl bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-950">
+            <input name="opened" type="hidden" value="false" />
+            <input
+              checked={opened}
+              className="size-4 accent-emerald-700"
+              name="opened"
+              onChange={(event) => setOpened(event.target.checked)}
+              type="checkbox"
+              value="true"
+            />
+            이미 개봉한 물품입니다
+          </label>
+
+          <Field
+            error={firstError(errors, "ingredients")}
+            label="원재료/주의 성분"
+            name="ingredients"
+          >
+            <textarea
+              className={`${inputClassName} min-h-28 resize-y`}
+              id="ingredients"
+              maxLength={500}
+              name="ingredients"
+              onChange={(event) => setIngredients(event.target.value)}
+              placeholder="예: 닭고기, 쌀, 옥수수 / 알러지 유발 가능 성분"
+              value={ingredients}
+            />
+          </Field>
+
+          <Field
+            error={firstError(errors, "life_stage")}
+            label="권장 연령/단계"
+            name="life_stage"
+          >
+            <input
+              className={inputClassName}
+              id="life_stage"
+              maxLength={50}
+              name="life_stage"
+              onChange={(event) => setLifeStage(event.target.value)}
+              placeholder="예: adult, puppy, senior"
+              type="text"
+              value={lifeStage}
+            />
+          </Field>
+
+          <Field
+            error={firstError(errors, "storage_note")}
+            label="보관 상태/메모"
+            name="storage_note"
+          >
+            <textarea
+              className={`${inputClassName} min-h-28 resize-y`}
+              id="storage_note"
+              maxLength={300}
+              name="storage_note"
+              onChange={(event) => setStorageNote(event.target.value)}
+              placeholder="예: 실온 보관, 직사광선 없음, 지퍼백 밀봉"
+              value={storageNote}
+            />
+          </Field>
+        </div>
       </section>
 
-      <div className="grid gap-6 md:grid-cols-2">
-        <Field error={firstError(errors, "name")} label="식품명" name="name">
-          <input
-            aria-describedby="name-error"
-            className={inputClassName}
-            id="name"
-            maxLength={100}
-            name="name"
-            onChange={(event) => setName(event.target.value)}
-            placeholder="예: 통밀 식빵"
-            required
-            type="text"
-            value={name}
-          />
-        </Field>
+      <section className="animate-fade-up-delay-2 rounded-[2rem] bg-white p-6 shadow-xl shadow-emerald-950/10 md:p-8">
+        <p className="text-sm font-black tracking-[0.2em] text-emerald-700 uppercase">
+          Step 3 · Pickup location
+        </p>
+        <h2 className="mt-2 text-3xl font-black text-emerald-950">
+          픽업 위치 등록
+        </h2>
 
-        <Field
-          error={firstError(errors, "quantity")}
-          label="수량"
-          name="quantity"
-        >
-          <input
-            aria-describedby="quantity-error"
-            className={inputClassName}
-            id="quantity"
-            min={1}
-            name="quantity"
-            onChange={(event) => setQuantity(event.target.value)}
-            placeholder="예: 3"
-            required
-            step={1}
-            type="number"
-            value={quantity}
-          />
-        </Field>
-
-        <div className="rounded-2xl border border-emerald-900/10 bg-emerald-50/80 p-4 md:col-span-2">
-          <div className="flex flex-col gap-3 md:flex-row md:items-end">
-            <label className="flex-1 text-sm font-bold text-emerald-950">
-              시연용 픽업 위치
-              <select
-                className={`${inputClassName} mt-2`}
-                defaultValue=""
-                onChange={handleDemoLocationChange}
-              >
-                <option disabled value="">
-                  위치를 선택하세요
-                </option>
-                {DEMO_PICKUP_LOCATIONS.map((demoLocation) => (
-                  <option key={demoLocation.id} value={demoLocation.id}>
-                    {demoLocation.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <button
-              className="rounded-2xl border border-emerald-700 bg-white px-5 py-3 font-bold text-emerald-800 transition hover:-translate-y-0.5 hover:bg-emerald-100 disabled:cursor-wait disabled:opacity-60"
-              disabled={location.requestState === "loading"}
-              onClick={location.useCurrentLocation}
-              type="button"
+        <div className="mt-6 grid gap-5 md:grid-cols-2">
+          <label className="text-sm font-bold text-emerald-950 md:col-span-2">
+            시연용 위치
+            <select
+              className={`${inputClassName} mt-2`}
+              defaultValue=""
+              onChange={handleDemoLocationChange}
             >
-              {location.requestState === "loading"
-                ? "위치 확인 중..."
-                : "현재 위치 한 번 사용"}
-            </button>
-          </div>
+              <option disabled value="">
+                위치를 선택하세요
+              </option>
+              {DEMO_PICKUP_LOCATIONS.map((demoLocation) => (
+                <option key={demoLocation.id} value={demoLocation.id}>
+                  {demoLocation.name}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <Field
+            error={firstError(errors, "latitude")}
+            label="위도"
+            name="latitude"
+          >
+            <input
+              className={inputClassName}
+              id="latitude"
+              max={90}
+              min={-90}
+              name="latitude"
+              onChange={(event) => location.setLatitude(event.target.value)}
+              required
+              step="0.0000001"
+              type="number"
+              value={location.latitude}
+            />
+          </Field>
+
+          <Field
+            error={firstError(errors, "longitude")}
+            label="경도"
+            name="longitude"
+          >
+            <input
+              className={inputClassName}
+              id="longitude"
+              max={180}
+              min={-180}
+              name="longitude"
+              onChange={(event) => location.setLongitude(event.target.value)}
+              required
+              step="0.0000001"
+              type="number"
+              value={location.longitude}
+            />
+          </Field>
+
+          <button
+            className="rounded-2xl border border-emerald-700 bg-white px-5 py-3 text-sm font-bold text-emerald-800 transition hover:-translate-y-0.5 hover:bg-emerald-100 disabled:cursor-wait disabled:opacity-60 md:col-span-2"
+            disabled={location.requestState === "loading"}
+            onClick={handleUseCurrentLocation}
+            type="button"
+          >
+            {location.requestState === "loading"
+              ? "위치 확인 중..."
+              : "현재 위치로 등록"}
+          </button>
           {location.message ? (
             <p
               className={
                 location.requestState === "error"
-                  ? "mt-3 text-sm font-semibold text-rose-700"
-                  : "mt-3 text-sm font-semibold text-emerald-800"
+                  ? "text-sm font-semibold text-rose-700 md:col-span-2"
+                  : "text-sm font-semibold text-emerald-800 md:col-span-2"
               }
               role="status"
             >
@@ -615,105 +650,15 @@ export function FoodRegistrationForm() {
             </p>
           ) : null}
         </div>
-
-        <Field
-          error={firstError(errors, "expiry_date")}
-          label="유통기한"
-          name="expiry_date"
-        >
-          <input
-            aria-describedby="expiry_date-error"
-            className={inputClassName}
-            id="expiry_date"
-            name="expiry_date"
-            onChange={(event) => setExpiryDate(event.target.value)}
-            required
-            type="datetime-local"
-            value={expiryDate}
-          />
-        </Field>
-
-        <Field
-          error={firstError(errors, "category")}
-          label="카테고리"
-          name="category"
-        >
-          <input
-            aria-describedby="category-error"
-            className={inputClassName}
-            id="category"
-            maxLength={50}
-            name="category"
-            onChange={(event) => setCategory(event.target.value)}
-            placeholder="예: 베이커리"
-            required
-            type="text"
-            value={category}
-          />
-        </Field>
-
-        <Field
-          error={firstError(errors, "latitude")}
-          label="픽업 위치 위도"
-          name="latitude"
-        >
-          <input
-            aria-describedby="latitude-error"
-            className={inputClassName}
-            id="latitude"
-            max={90}
-            min={-90}
-            name="latitude"
-            onChange={(event) => location.setLatitude(event.target.value)}
-            required
-            step="0.0000001"
-            type="number"
-            value={location.latitude}
-          />
-        </Field>
-
-        <Field
-          error={firstError(errors, "longitude")}
-          label="픽업 위치 경도"
-          name="longitude"
-        >
-          <input
-            aria-describedby="longitude-error"
-            className={inputClassName}
-            id="longitude"
-            max={180}
-            min={-180}
-            name="longitude"
-            onChange={(event) => location.setLongitude(event.target.value)}
-            required
-            step="0.0000001"
-            type="number"
-            value={location.longitude}
-          />
-        </Field>
-      </div>
+      </section>
 
       {state.status === "error" ? (
-        <div
-          className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-800"
-          role="alert"
-        >
+        <p className="rounded-2xl bg-rose-50 px-5 py-4 text-sm font-bold text-rose-700">
           {state.message}
-        </div>
+        </p>
       ) : null}
 
-      <p className="rounded-2xl bg-orange-50 px-5 py-4 text-sm leading-6 text-slate-600">
-        위치 권한은 버튼을 누른 경우에만 한 번 요청합니다. 대회 시연에서는
-        부경대학교 주변 프리셋을 선택해 여러 픽업 지점을 준비할 수 있습니다.
-      </p>
-
       <SubmitButton />
-
-      <BarcodeScanner
-        isOpen={isScannerOpen}
-        onClose={() => setIsScannerOpen(false)}
-        onScanSuccess={handleBarcodeScanSuccess}
-      />
     </form>
   );
 }

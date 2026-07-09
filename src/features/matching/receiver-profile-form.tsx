@@ -20,30 +20,35 @@ export function ReceiverProfileForm({
   const router = useRouter();
   const location = useLocationSelection(receiver);
 
-  function moveReceiverLocation(
-    latitude: string,
-    longitude: string,
-    preferredCategory: string,
-  ) {
-    const params = new URLSearchParams({
-      latitude,
-      longitude,
-    });
-    const trimmedPreferredCategory = preferredCategory.trim();
+  function getProfileParams(form: HTMLFormElement | null) {
+    const params = new URLSearchParams();
+    const formData = form ? new FormData(form) : null;
 
-    if (trimmedPreferredCategory) {
-      params.set("preferred_category", trimmedPreferredCategory);
+    for (const key of [
+      "pet_id",
+      "pet_name",
+      "species",
+      "age",
+      "weight",
+      "allergies",
+      "condition_note",
+    ]) {
+      const value = String(formData?.get(key) ?? "").trim();
+      if (value) params.set(key, value);
     }
 
-    router.push(`/foods?${params.toString()}`);
+    if (formData?.get("is_prescription_diet")) {
+      params.set("is_prescription_diet", "true");
+    }
+
+    return params;
   }
 
-  function getPreferredCategory(form: HTMLFormElement | null) {
-    const preferredCategoryInput = form?.querySelector<HTMLInputElement>(
-      'input[name="preferred_category"]',
-    );
-
-    return preferredCategoryInput?.value ?? "";
+  function moveReceiverLocation(latitude: string, longitude: string, form: HTMLFormElement | null) {
+    const params = getProfileParams(form);
+    params.set("latitude", latitude);
+    params.set("longitude", longitude);
+    router.push(`/foods?${params.toString()}`);
   }
 
   function handleDemoLocationChange(event: ChangeEvent<HTMLSelectElement>) {
@@ -60,7 +65,7 @@ export function ReceiverProfileForm({
       moveReceiverLocation(
         nextCoordinates.latitude,
         nextCoordinates.longitude,
-        getPreferredCategory(event.currentTarget.form),
+        event.currentTarget.form,
       );
     }
   }
@@ -78,19 +83,19 @@ export function ReceiverProfileForm({
     moveReceiverLocation(
       nextCoordinates.latitude,
       nextCoordinates.longitude,
-      getPreferredCategory(form),
+      form,
     );
   }
 
   return (
     <form
       action="/foods"
-      className="surface-card animate-fade-up-delay-1 grid gap-4 rounded-[1.75rem] p-5 md:grid-cols-[1fr_1fr_1.2fr_auto] md:items-end"
+      className="surface-card animate-fade-up-delay-1 grid gap-4 rounded-[1.75rem] p-5 md:grid-cols-4 md:items-end"
       method="get"
     >
       <div className="flex flex-col gap-3 rounded-2xl bg-gradient-to-r from-emerald-50 to-orange-50 p-4 md:col-span-4 md:flex-row md:items-end">
         <label className="flex-1 text-sm font-bold text-emerald-950">
-          시연용 수혜자 위치
+          시연용 보호자 위치
           <select
             className={`${inputClassName} mt-2`}
             defaultValue=""
@@ -114,7 +119,7 @@ export function ReceiverProfileForm({
         >
           {location.requestState === "loading"
             ? "위치 확인 중..."
-            : "내 현재 위치 한 번 사용"}
+            : "현재 위치 사용"}
         </button>
         {location.message ? (
           <p
@@ -129,6 +134,53 @@ export function ReceiverProfileForm({
           </p>
         ) : null}
       </div>
+      <input name="pet_id" type="hidden" value={receiver.petId} />
+      <label className="text-sm font-bold text-emerald-950">
+        반려동물 이름
+        <input
+          className={`${inputClassName} mt-2`}
+          defaultValue={receiver.name}
+          maxLength={50}
+          name="pet_name"
+          placeholder="예: 콩이"
+          type="text"
+        />
+      </label>
+      <label className="text-sm font-bold text-emerald-950">
+        종
+        <select
+          className={`${inputClassName} mt-2`}
+          defaultValue={receiver.species}
+          name="species"
+        >
+          <option value="dog">강아지</option>
+          <option value="cat">고양이</option>
+        </select>
+      </label>
+      <label className="text-sm font-bold text-emerald-950">
+        나이
+        <input
+          className={`${inputClassName} mt-2`}
+          defaultValue={receiver.age ?? ""}
+          min={0}
+          name="age"
+          placeholder="예: 4"
+          step="0.1"
+          type="number"
+        />
+      </label>
+      <label className="text-sm font-bold text-emerald-950">
+        몸무게(kg)
+        <input
+          className={`${inputClassName} mt-2`}
+          defaultValue={receiver.weight ?? ""}
+          min={0}
+          name="weight"
+          placeholder="예: 5.2"
+          step="0.1"
+          type="number"
+        />
+      </label>
       <label className="text-sm font-bold text-emerald-950">
         위도
         <input
@@ -158,15 +210,35 @@ export function ReceiverProfileForm({
         />
       </label>
       <label className="text-sm font-bold text-emerald-950">
-        선호 카테고리
+        알러지 성분
         <input
           className={`${inputClassName} mt-2`}
-          defaultValue={receiver.preferredCategory ?? ""}
+          defaultValue={receiver.allergies.join(", ")}
           maxLength={50}
-          name="preferred_category"
-          placeholder="예: 베이커리"
+          name="allergies"
+          placeholder="예: 닭고기, 밀"
           type="text"
         />
+      </label>
+      <label className="text-sm font-bold text-emerald-950 md:col-span-2">
+        건강/급여 메모
+        <input
+          className={`${inputClassName} mt-2`}
+          defaultValue={receiver.conditionNote ?? ""}
+          maxLength={120}
+          name="condition_note"
+          placeholder="예: 피부가 예민해서 단백질원을 확인해요"
+          type="text"
+        />
+      </label>
+      <label className="flex items-center gap-3 rounded-2xl bg-white px-4 py-3 text-sm font-bold text-emerald-950">
+        <input
+          className="size-4 accent-emerald-700"
+          defaultChecked={receiver.isPrescriptionDiet}
+          name="is_prescription_diet"
+          type="checkbox"
+        />
+        처방식 급여 중
       </label>
       <button
         className="rounded-2xl bg-emerald-700 px-5 py-2.5 text-sm font-black text-white shadow-lg shadow-emerald-900/15 transition hover:-translate-y-0.5 hover:bg-emerald-800"

@@ -1,138 +1,554 @@
-# docs/algorithms.md
+# BobEum Algorithms
 
-## 1. Matching Score Formula
+This document defines deterministic matching behavior for the BobEum MVP.
 
-When sorting food items for a receiver, implement the exact weighting formula below:
+AI is used for extraction and compatibility reasoning, but final ranking must be deterministic and testable.
 
-$$
-S = 0.4 \cdot S_{\text{dist}}
-  + 0.4 \cdot S_{\text{expiry}}
-  + 0.2 \cdot S_{\text{pref}}
-$$
+## 1. Core Concepts
 
-If `hoursLeft <= 0`, the total score must immediately be `0`.
+BobEum matching uses three scores:
 
-If `distanceKm > 30`, the total score must immediately be `0`.
-The platform may still display the food item, but it must be sorted below
-in-range recommendations.
+1. Compatibility score
+2. Distance score
+3. Expiry urgency score
 
-## 2. GPS Distance
+Final score:
 
-Calculate the geographic distance between the receiver and food coordinates
-using the Haversine formula.
+```txt
+match_score = compatibility_score * 0.4
+            + distance_score * 0.3
+            + urgency_score * 0.3
+```
 
-Let:
+All component scores are normalized from 0 to 100.
 
-- receiver latitude: $\phi_1$
-- receiver longitude: $\lambda_1$
-- food latitude: $\phi_2$
-- food longitude: $\lambda_2$
-- Earth radius: $R = 6371$ kilometers
+## 2. Hard Exclusion Rules
 
-Convert all coordinate values from degrees to radians.
+An item must be excluded from recommendations if any condition is true:
 
-$$
-a =
-\sin^2\left(\frac{\phi_2-\phi_1}{2}\right)
-+
-\cos(\phi_1)\cos(\phi_2)
-\sin^2\left(\frac{\lambda_2-\lambda_1}{2}\right)
-$$
+- item.status is not `available`
+- item.expiry_date is before today
+- distance is greater than 10km
+- compatibility is `unsuitable`
+- target species does not match pet species
+- item has no usable location
+- pet has no usable location
+- item is food/treat but ingredients are missing and compatibility cannot be assessed
 
-$$
-\text{distanceKm}
-=
-2R \cdot
-\arctan2\left(\sqrt{a}, \sqrt{1-a}\right)
-$$
+For supplies, such as bowls or pads, ingredient compatibility can be skipped.
 
-The distance score is:
+## 3. Distance Calculation
 
-$$
-S_{\text{dist}} = \frac{1}{1 + \text{distanceKm}}
-$$
+Use Haversine distance.
 
-Distance is the first eligibility gate. Foods beyond 30 km are treated as
-outside the recommended pickup radius.
+Inputs:
 
-## 3. Expiry Urgency Score
+- pet/user latitude
+- pet/user longitude
+- item latitude
+- item longitude
 
-Calculate the remaining time in hours:
+Output:
 
-$$
-\text{hoursLeft}
-=
-\frac{\text{expiryDate} - \text{currentTime}}{3{,}600{,}000}
-$$
+- distance in kilometers
 
-If `hoursLeft <= 0`:
+Pseudo-code:
 
-$$
-S = 0
-$$
+```ts
+export function haversineKm(
+  lat1: number,
+  lon1: number,
+  lat2: number,
+  lon2: number
+): number {
+  const R = 6371;
+  const toRad = (value: number) => (value * Math.PI) / 180;
 
-Otherwise, the urgency score is higher when the food is closer to expiry:
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
 
-$$
-S_{\text{expiry}} = \frac{1}{1 + \text{hoursLeft}}
-$$
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) *
+      Math.cos(toRad(lat2)) *
+      Math.sin(dLon / 2) ** 2;
 
-## 4. Preference Score
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+```
 
-$$
-S_{\text{pref}} =
-\begin{cases}
-1.0, & \text{if receiver preferred category equals food category} \\
-0.0, & \text{otherwise}
-\end{cases}
-$$
+## 4. Distance Score
 
-Category comparison must use the stored category values without AI inference.
+10km is the MVP service radius.
 
-## 5. Sorting Rules
+```txt
+distance_score = max(0, 100 - (distance_km / 10) * 100)
+```
 
-- Sort available foods by total score in descending order.
-- Foods beyond 30 km receive a total score of `0`.
-- Expired foods receive a total score of `0`.
-- Do not use live tracking or continuously update scores from location changes.
-- Recalculate scores only after an explicit receiver location or preference update.
+Examples:
 
-## 6. Location Acquisition
+| Distance | Score |
+|---:|---:|
+| 0km | 100 |
+| 1km | 90 |
+| 5km | 50 |
+| 10km | 0 |
+| 11km | excluded |
 
-The Browser Geolocation API may be called only after an explicit user action.
+## 5. Expiry Urgency Score
 
-Use a one-time location request with
-`navigator.geolocation.getCurrentPosition(success, error, options)`.
+Expired items are excluded.
 
-Do not use `navigator.geolocation.watchPosition`.
+For non-expired items, closer expiry gets higher urgency.
 
-If location permission is denied or unavailable, preserve the manually entered
-coordinates and show an actionable error message.
+MVP default:
 
-## 7. AI Food Image Analysis
+```txt
+days_left = expiry_date - today
 
-AI image analysis is used only as a supplier registration helper.
+if days_left < 0:
+  exclude
+else if days_left <= 1:
+  urgency_score = 100
+else if days_left <= 3:
+  urgency_score = 85
+else if days_left <= 7:
+  urgency_score = 65
+else if days_left <= 14:
+  urgency_score = 40
+else if days_left <= 30:
+  urgency_score = 20
+else:
+  urgency_score = 10
+```
 
-The input is a selected food image. The output must be parsed as JSON with:
+For non-food supplies:
 
-- `name`: Korean food name or `null`
-- `quantity`: positive integer or `null`
-- `category`: one of `간편식`, `베이커리`, `음료`, `신선식품`, `유제품`, `기타`, or `null`
-- `expiry_date`: ISO-8601 datetime with timezone or `null`
-- `storage`: one of `상온`, `냉장`, `냉동`, `알 수 없음`, or `null`
-- `ready_to_eat`: boolean or `null`
-- `confidence`: number from 0 to 1
-- `notes`: short supplier-facing note or `null`
+```txt
+urgency_score = 0
+```
 
-The AI prompt must enforce these safety rules:
+## 6. Compatibility Labels
 
-- Extract an expiry date only when it is visibly written on the package.
-- Extract quantity only when separate food units are clearly countable.
-- Use `null` for quantity when the count is hidden, cropped, stacked, ambiguous, or not visually countable.
-- Never invent or guess an expiry date.
-- Use `null` for hidden, blurry, incomplete, or uncertain expiry text.
-- Keep the allowed category set fixed.
-- Treat the result as an editable suggestion.
+Valid labels:
 
-AI analysis must not directly create a database record. The supplier must submit
-the final registration form after reviewing the suggested values.
+- `suitable`
+- `conditional`
+- `unsuitable`
+- `not_applicable`
+
+Meaning:
+
+### suitable
+
+The item appears compatible with the pet profile based on available data.
+
+### conditional
+
+The item may be usable but requires caution.
+
+Examples:
+
+- incomplete ingredient confidence
+- prescription diet involved
+- unclear life stage
+- opened item with unknown opened date
+- pet has condition requiring care
+
+### unsuitable
+
+The item should not be recommended to this pet profile.
+
+Examples:
+
+- allergy conflict
+- species mismatch
+- expired item
+- incompatible life stage with strong evidence
+- prescription diet mismatch
+- unsafe/uncertain opened food condition
+
+### not_applicable
+
+Used for non-food supplies.
+
+Examples:
+
+- bowls
+- pads
+- toys
+- carriers
+- unused accessories
+
+## 7. Compatibility Score
+
+Map labels to base scores:
+
+```txt
+suitable       = 100
+conditional    = 60
+unsuitable     = 0
+not_applicable = 80
+```
+
+Adjustments:
+
+```txt
+- explicit allergy conflict: force unsuitable, score 0
+- species mismatch: force unsuitable, score 0
+- expired item: force unsuitable, score 0
+- prescription diet and pet condition mismatch: force unsuitable or conditional
+- missing ingredients for food: conditional at best
+- unknown opened date for opened food: conditional at best
+```
+
+For MVP, use AI to produce a candidate compatibility result, then apply deterministic hard rules.
+
+## 8. Allergy Matching
+
+Pet allergies are stored as normalized Korean or English ingredient tokens.
+
+Example allergy tokens:
+
+```txt
+chicken
+beef
+pork
+duck
+fish
+salmon
+tuna
+grain
+corn
+wheat
+soy
+dairy
+egg
+```
+
+Ingredient matching should be case-insensitive and should handle Korean synonyms where possible.
+
+Example mapping:
+
+```txt
+닭, 닭고기, 치킨, chicken -> chicken
+소, 소고기, beef -> beef
+돼지, 돼지고기, pork -> pork
+연어, salmon -> salmon
+참치, tuna -> tuna
+옥수수, corn -> corn
+밀, wheat -> wheat
+대두, 콩, soy -> soy
+계란, 달걀, egg -> egg
+우유, 유제품, dairy -> dairy
+곡물, grain -> grain
+```
+
+If any normalized allergy token appears in normalized ingredients:
+
+```txt
+compatibility = unsuitable
+score = 0
+reason includes allergy conflict
+```
+
+## 9. Species Matching
+
+Item target species:
+
+- `dog`
+- `cat`
+- `both`
+- `other`
+
+Pet species:
+
+- `dog`
+- `cat`
+
+Rules:
+
+```txt
+if item.target_species === pet.species:
+  pass
+
+if item.target_species === "both":
+  pass
+
+otherwise:
+  unsuitable
+```
+
+## 10. Life Stage Matching
+
+Pet age groups:
+
+For dogs:
+
+```txt
+puppy: age < 1
+adult: 1 <= age < 7
+senior: age >= 7
+```
+
+For cats:
+
+```txt
+kitten: age < 1
+adult: 1 <= age < 10
+senior: age >= 10
+```
+
+Item life stage candidates:
+
+- `puppy`
+- `kitten`
+- `adult`
+- `senior`
+- `all_life_stages`
+- `unknown`
+
+Rules:
+
+```txt
+if item life stage is all_life_stages:
+  suitable
+
+if item life stage matches pet life stage:
+  suitable
+
+if item life stage unknown:
+  conditional
+
+if item life stage clearly mismatches:
+  conditional or unsuitable depending on AI reason
+```
+
+For MVP, do not over-block life stage unless the mismatch is clear.
+
+## 11. Opened Food Screening
+
+Fields:
+
+- opened: boolean
+- opened_at: date or null
+- storage_note: optional string
+
+Rules:
+
+```txt
+if opened === false:
+  pass
+
+if opened === true and opened_at is null:
+  compatibility = conditional at best
+
+if opened === true and opened_at is very old:
+  compatibility = conditional or unsuitable
+```
+
+MVP default threshold:
+
+```txt
+opened_days > 60:
+  unsuitable for food/treat
+
+opened_days > 30:
+  conditional
+
+opened_days <= 30:
+  allowed
+```
+
+This is not a safety guarantee. UI must show advisory text.
+
+## 12. Item Category Rules
+
+Categories:
+
+- `dry_food`
+- `wet_food`
+- `treat`
+- `prescription`
+- `supply`
+
+Food categories requiring compatibility:
+
+- dry_food
+- wet_food
+- treat
+- prescription
+
+Supply category:
+
+- skip ingredients
+- compatibility = not_applicable
+- score = 80
+- still apply distance and status rules
+- expiry urgency score = 0 unless expiry date exists
+
+Prescription category:
+
+- always display caution
+- if pet condition does not match prescription purpose, mark conditional or unsuitable
+- include “수의사 상담 권장”
+
+## 13. AI Product Analysis JSON
+
+Gemini should return JSON matching this shape:
+
+```ts
+export type AiItemAnalysis = {
+  name: string | null;
+  brand: string | null;
+  category:
+    | "dry_food"
+    | "wet_food"
+    | "treat"
+    | "prescription"
+    | "supply"
+    | "unknown";
+  targetSpecies: "dog" | "cat" | "both" | "other" | "unknown";
+  remainingAmount: string | null;
+  opened: boolean | null;
+  openedAtCandidate: string | null;
+  expiryDateCandidate: string | null;
+  ingredients: string[];
+  lifeStage: "puppy" | "kitten" | "adult" | "senior" | "all_life_stages" | "unknown";
+  confidence: number;
+  explanation: string;
+  warnings: string[];
+};
+```
+
+Rules:
+
+- Do not save invalid JSON directly.
+- If confidence is low, show the fields as editable and warn the user.
+- If expiry is uncertain, require manual user input.
+
+## 14. AI Compatibility JSON
+
+Gemini should return JSON matching this shape:
+
+```ts
+export type AiCompatibilityResult = {
+  compatibility: "suitable" | "conditional" | "unsuitable" | "not_applicable";
+  score: number;
+  reason: string;
+  allergyConflicts: string[];
+  warnings: string[];
+  alternativeRecommendationQuery: string | null;
+};
+```
+
+After receiving this result, apply deterministic hard rules again.
+
+## 15. Final Match Object
+
+The recommendation engine should return:
+
+```ts
+export type MatchResult = {
+  itemId: string;
+  petId: string;
+  compatibility: "suitable" | "conditional" | "unsuitable" | "not_applicable";
+  compatibilityScore: number;
+  compatibilityReason: string;
+  distanceKm: number;
+  distanceScore: number;
+  urgencyScore: number;
+  matchScore: number;
+  excluded: boolean;
+  exclusionReasons: string[];
+};
+```
+
+## 16. Ranking
+
+Sort recommendation results by:
+
+1. matchScore descending
+2. compatibilityScore descending
+3. expiry date ascending
+4. distanceKm ascending
+5. created_at descending
+
+## 17. Top Alert Cards
+
+Given available recommendations, compute:
+
+### Compatible count
+
+Number of non-excluded items.
+
+### Closest item
+
+Lowest distanceKm among non-excluded items.
+
+### Most urgent item
+
+Earliest expiry date among non-excluded items.
+
+### Top recommendation
+
+Highest matchScore.
+
+## 18. Reservation Algorithm
+
+When receiver requests an item:
+
+1. Confirm item status is `available`.
+2. Create or update match row.
+3. Set item status to `reserved`.
+4. Set match status to `accepted`.
+5. Exclude item from future recommendations.
+
+Pseudo-code:
+
+```ts
+async function reserveItem(itemId: string, receiverId: string, matchScore: number) {
+  const item = await getItem(itemId);
+
+  if (!item || item.status !== "available") {
+    throw new Error("이미 예약되었거나 신청할 수 없는 물품입니다.");
+  }
+
+  await createMatch({
+    item_id: itemId,
+    receiver_id: receiverId,
+    match_score: matchScore,
+    status: "accepted",
+  });
+
+  await updateItemStatus(itemId, "reserved");
+}
+```
+
+## 19. Demo Data Guidelines
+
+Use clear demo cases:
+
+### Suitable case
+
+- Pet: adult dog, no chicken allergy
+- Item: dog dry food, no conflicting ingredients
+- Result: suitable
+
+### Allergy conflict case
+
+- Pet: dog with chicken allergy
+- Item: chicken-based dog food
+- Result: unsuitable and excluded
+
+### Conditional case
+
+- Pet: senior cat
+- Item: cat food with unclear life stage or opened date
+- Result: conditional
+
+### Supply case
+
+- Item: unused pet bowl
+- Result: not_applicable compatibility but still listable

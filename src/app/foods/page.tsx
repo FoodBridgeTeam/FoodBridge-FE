@@ -2,10 +2,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import {
-  FOOD_IMAGE_BUCKET,
-  getFoodImagePath,
-} from "@/features/foods/constants";
-import {
   rankFoodsByMatchScore,
   type ReceiverProfile,
 } from "@/features/matching/calculate-match-score";
@@ -21,36 +17,43 @@ import { createClient } from "@/lib/supabase/server";
 import { getKakaoMapJavascriptKey } from "@/lib/env";
 
 export const metadata: Metadata = {
-  title: "주변 식품 추천 | FoodBridge",
-  description: "거리 우선, 긴급도, 선호 카테고리를 반영한 식품 추천 목록",
+  title: "맞춤 나눔 추천 | 밥이음",
+  description: "반려동물 프로필, 위치, 유통기한을 반영한 사료·용품 추천 목록",
 };
 
 type FoodsPageProps = {
   searchParams: Promise<ReceiverSearchParams>;
 };
 
+const FALLBACK_ITEM_IMAGE =
+  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='640' height='420' viewBox='0 0 640 420'%3E%3Crect width='640' height='420' fill='%23ecfdf5'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-size='72'%3E%F0%9F%90%BE%3C/text%3E%3C/svg%3E";
+
 async function getRankedFoods(receiver: ReceiverProfile) {
   const supabase = await createClient();
   const { data, error } = await supabase
-    .from("foods")
+    .from("items")
     .select("*")
     .eq("status", "available");
 
   if (error) {
-    throw new Error(`등록 식품을 불러오지 못했습니다: ${error.message}`);
+    throw new Error(`등록 물품을 불러오지 못했습니다: ${error.message}`);
   }
 
   const rankedFoods = rankFoodsByMatchScore(data, receiver);
 
-  return rankedFoods.map((food) => {
-    const { data: image } = supabase.storage
-      .from(FOOD_IMAGE_BUCKET)
-      .getPublicUrl(getFoodImagePath(food.id));
+  return rankedFoods.flatMap((food) => {
+    if (typeof food.latitude !== "number" || typeof food.longitude !== "number") {
+      return [];
+    }
 
-    return {
-      ...food,
-      imageUrl: image.publicUrl,
-    };
+    return [
+      {
+        ...food,
+        imageUrl: food.image_url ?? FALLBACK_ITEM_IMAGE,
+        latitude: food.latitude,
+        longitude: food.longitude,
+      },
+    ];
   });
 }
 
@@ -66,26 +69,27 @@ export default async function FoodsPage({ searchParams }: FoodsPageProps) {
           className="inline-flex rounded-full bg-white/70 px-4 py-2 text-sm font-bold text-emerald-800 shadow-sm transition hover:-translate-x-0.5 hover:text-emerald-950"
           href="/"
         >
-          ← FoodBridge 홈
+          ← 밥이음 홈
         </Link>
         <Link
           className="rounded-full bg-emerald-700 px-5 py-2.5 text-sm font-black text-white shadow-lg shadow-emerald-900/15 transition hover:-translate-y-0.5 hover:bg-emerald-800"
           href="/foods/new"
         >
-          + 식품 등록
+          + 나눔 등록
         </Link>
       </div>
 
       <header className="animate-fade-up mt-8 rounded-[2rem] bg-white/75 p-7 shadow-sm backdrop-blur md:p-10">
         <p className="inline-flex rounded-full bg-orange-100 px-4 py-2 text-sm font-black tracking-[0.16em] text-orange-700 uppercase">
-          Receiver · Matching feed
+          Pet profile · AI matching
         </p>
         <h1 className="mt-3 text-4xl font-black tracking-tight text-emerald-950 md:text-5xl">
-          지금 받을 수 있는 나눔 식품
+          우리 아이에게 맞는 나눔
         </h1>
         <p className="mt-4 max-w-3xl text-lg leading-8 text-slate-600">
-          30km 이내 식품을 우선 추천하고, 거리 40%, 폐기 임박 긴급도 40%,
-          선호 카테고리 20%를 반영해 점수가 높은 순서로 보여드립니다.
+          10km 이내 사료·간식·용품을 대상으로 반려동물 종, 알러지, 처방식
+          여부를 먼저 걸러낸 뒤 궁합 40%, 거리 30%, 유통기한 긴급도 30%로
+          추천합니다.
         </p>
       </header>
 
@@ -114,7 +118,7 @@ export default async function FoodsPage({ searchParams }: FoodsPageProps) {
             </h2>
           </div>
           <span className="text-sm font-bold text-slate-500">
-            {foods.length}개 식품
+            {foods.length}개 나눔
           </span>
         </div>
 
@@ -127,10 +131,11 @@ export default async function FoodsPage({ searchParams }: FoodsPageProps) {
         ) : (
           <div className="rounded-2xl border border-dashed border-emerald-900/20 bg-white px-6 py-16 text-center">
             <h3 className="text-xl font-black text-emerald-950">
-              등록된 식품이 없습니다
+              추천 가능한 나눔이 없습니다
             </h3>
             <p className="mt-2 text-slate-500">
-              공급자가 식품을 등록하면 이곳에 추천 결과가 표시됩니다.
+              보호자 위치를 바꾸거나 가까운 나눔이 등록되면 이곳에 추천 결과가
+              표시됩니다.
             </p>
           </div>
         )}

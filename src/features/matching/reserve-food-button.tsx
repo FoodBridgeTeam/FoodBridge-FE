@@ -7,9 +7,13 @@ import {
   reserveFood,
   type FoodReservationState,
 } from "@/features/foods/actions";
+import type { MatchScore } from "@/features/matching/calculate-match-score";
 
 type ReserveFoodButtonProps = {
-  foodId: string;
+  food: {
+    id: string;
+    match: MatchScore;
+  };
 };
 
 const INITIAL_STATE: FoodReservationState = {
@@ -31,12 +35,43 @@ function SubmitButton() {
   );
 }
 
-export function ReserveFoodButton({ foodId }: ReserveFoodButtonProps) {
+export function ReserveFoodButton({ food }: ReserveFoodButtonProps) {
   const [state, formAction] = useActionState(reserveFood, INITIAL_STATE);
 
   return (
     <form action={formAction} className="mt-5">
-      <input name="foodId" type="hidden" value={foodId} />
+      <input name="foodId" type="hidden" value={food.id} />
+      <input name="petId" type="hidden" value="" />
+      <input
+        name="matchScore"
+        type="hidden"
+        value={food.match.matchScore.toFixed(2)}
+      />
+      <input
+        name="compatibility"
+        type="hidden"
+        value={food.match.compatibility}
+      />
+      <input
+        name="compatibilityScore"
+        type="hidden"
+        value={food.match.compatibilityScore.toFixed(2)}
+      />
+      <input
+        name="compatibilityReason"
+        type="hidden"
+        value={food.match.compatibilityReason}
+      />
+      <input
+        name="distanceKm"
+        type="hidden"
+        value={food.match.distanceKm.toFixed(3)}
+      />
+      <input
+        name="urgencyScore"
+        type="hidden"
+        value={food.match.urgencyScore.toFixed(2)}
+      />
       <SubmitButton />
       {state.message ? (
         <p

@@ -1,33 +1,136 @@
-# AGENTS.md
+# AGENTS.md — 밥이음 BobEum Project Harness
 
-> **[Agent Rule]** You are an autonomous developer agent executing tasks for the Surplus Food AI Matching Platform.
-> You must write 100% of the code. Do not write partial stubs. Follow the map below to understand the repository constraints.
+## Project Identity
 
-## 1. Core Operating Principles
+Current product: **밥이음 BobEum**
 
-1. **Zero Human Code**: Every line of application logic, test, and config must be written by the Agent.
-2. **Strict Context Gating**: Do not guess implementation details. Refer to the `docs/` directory for absolute truths.
+This repository was originally built as **FoodBridge**, a surplus human food matching MVP. It is now being pivoted into **BobEum**, a surplus pet food and pet supplies matching MVP.
 
-## 2. Repository Knowledge Map
+Treat old FoodBridge naming such as `food`, `supplier`, `receiver`, `expiry`, and `match` as legacy domain language. When editing touched files, migrate user-facing language to the BobEum domain.
 
-You must read and satisfy the constraints in these files before implementation:
+Core product flow:
 
-- **Product Scope & Constraints**: [`docs/product-specs.md`](./docs/product-specs.md)
-- **Database Single Source of Truth**: [`docs/db-schema.md`](./docs/db-schema.md)
-- **Matching Mathematics**: [`docs/algorithms.md`](./docs/algorithms.md)
+등록 → AI 분석 → AI 궁합 판정 → 위치 기반 추천 → 수령 신청 → 상태 변경
 
-## 3. Technology Stack
+## Source of Truth Documents
 
-- Framework: Next.js 14+ (App Router, TypeScript)
-- Styling: Tailwind CSS
-- Backend/Database: Supabase (PostgreSQL)
-- Map: Kakao Maps JavaScript API
-- Location Input: Browser Geolocation API
-- Matching Engine: Deterministic TypeScript scoring algorithm
+Read these before making product or database changes:
 
-## 4. Location Rules
+- `docs/product-specs.md` — product scope, UX, personas, MVP boundaries
+- `docs/db-schema.md` — Supabase table structure and field meaning
+- `docs/algorithms.md` — compatibility, matching score, distance, urgency algorithms
 
-- Location permission must only be requested after an explicit user action.
-- Capture the current coordinates once during food registration.
-- Do not implement continuous tracking, background tracking, or location history.
-- Manual coordinate input or map-based location selection must remain available as a fallback.
+If code and docs disagree, prefer these docs unless existing production behavior clearly requires otherwise.
+
+## MVP Scope
+
+Implement only the BobEum MVP.
+
+In scope:
+
+- Main page
+- Item registration page
+- Pet profile registration page
+- Recommendation/list page
+- Supabase DB integration
+- Supabase Storage image upload
+- Gemini-based product image analysis
+- Gemini-based ingredient/compatibility analysis
+- GPS/manual location input
+- Location-based matching
+- Reservation status update
+- Kakao map marker display
+- In-page recommendation alert cards
+
+Out of scope:
+
+- Login/signup
+- Payment
+- Paid transactions
+- Chat
+- Admin page
+- Push notifications
+- Complex authorization
+- Real route navigation
+- Real veterinary diagnosis
+- Real affiliate checkout
+
+## Business Rule Hard Constraints
+
+- This MVP is **donation-only**. Do not implement price, checkout, payment, bidding, escrow, or settlement.
+- Items can be requested/reserved, not purchased.
+- AI compatibility output is advisory. It must not be presented as veterinary diagnosis or guaranteed safety.
+- Prescription diet items must show a “수의사 상담 권장” notice.
+- Expired items must not appear in recommendation results.
+- Items judged `unsuitable` for a pet must be excluded from that pet’s recommendation list.
+- Reserved/completed items must not appear in available recommendations.
+
+## Technical Stack
+
+Keep the existing stack unless the user explicitly asks otherwise:
+
+- Next.js App Router
+- React
+- TypeScript
+- Tailwind CSS
+- Supabase PostgreSQL
+- Supabase Storage
+- Gemini API
+- Kakao Maps JavaScript API
+- Browser Geolocation API
+- Vercel
+
+## Implementation Rules
+
+- Prefer small, reversible changes.
+- Preserve existing working infrastructure from FoodBridge when possible.
+- Rename UI/domain language only when needed for BobEum clarity.
+- Keep server-only API keys out of client components.
+- Use typed data shapes for AI responses.
+- Validate AI JSON before writing it to the database.
+- Do not trust OCR/AI output blindly; show editable fields to the user.
+- Keep matching logic deterministic after AI compatibility values are produced.
+- Do not add new external libraries unless necessary.
+
+## UI Tone
+
+Use Korean user-facing copy.
+
+The service tone should be:
+
+- Warm
+- Trustworthy
+- Practical
+- Safety-aware
+- Not overly cute
+
+Preferred terms:
+
+- 나눔자
+- 수혜자
+- 반려동물
+- 사료
+- 간식
+- 용품
+- AI 궁합 판정
+- 수령 신청
+- 예약됨
+
+Avoid terms from the old FoodBridge domain in user-facing UI:
+
+- 잉여 식품
+- 급식소
+- 편의점
+- 음식 수령
+- 식품 추천
+
+## Done Criteria
+
+A task is complete only when:
+
+- Relevant UI copy uses BobEum terminology.
+- Data model matches `docs/db-schema.md`.
+- Matching behavior matches `docs/algorithms.md`.
+- MVP boundaries in `docs/product-specs.md` are respected.
+- `npm run build` passes if the project has a build script.
+- No payment, sales, or veterinary-diagnosis behavior is introduced.

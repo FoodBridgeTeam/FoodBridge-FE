@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
 
 import {
-  FOOD_IMAGE_ACCEPTED_TYPES,
-  FOOD_IMAGE_MAX_BYTES,
+  ITEM_IMAGE_ACCEPTED_TYPES,
+  ITEM_IMAGE_MAX_BYTES,
 } from "@/features/foods/constants";
 import {
-  FOOD_IMAGE_ANALYSIS_PROMPT,
-  parseFoodImageAnalysis,
+  ITEM_IMAGE_ANALYSIS_PROMPT,
+  parseItemImageAnalysis,
 } from "@/features/foods/image-analysis";
 import { getGeminiApiKey } from "@/lib/env";
 
@@ -51,16 +51,16 @@ export async function POST(request: Request) {
   const image = formData.get("image");
 
   if (!(image instanceof File) || image.size === 0) {
-    return jsonError("분석할 식품 사진을 선택해 주세요.", 400);
+    return jsonError("분석할 사료·용품 사진을 선택해 주세요.", 400);
   }
 
-  if (image.size > FOOD_IMAGE_MAX_BYTES) {
+  if (image.size > ITEM_IMAGE_MAX_BYTES) {
     return jsonError("사진은 5MB 이하만 분석할 수 있습니다.", 400);
   }
 
   if (
-    !FOOD_IMAGE_ACCEPTED_TYPES.includes(
-      image.type as (typeof FOOD_IMAGE_ACCEPTED_TYPES)[number],
+    !ITEM_IMAGE_ACCEPTED_TYPES.includes(
+      image.type as (typeof ITEM_IMAGE_ACCEPTED_TYPES)[number],
     )
   ) {
     return jsonError("JPEG, PNG 또는 WebP 사진만 분석할 수 있습니다.", 400);
@@ -74,7 +74,7 @@ export async function POST(request: Request) {
         contents: [
           {
             parts: [
-              { text: FOOD_IMAGE_ANALYSIS_PROMPT },
+              { text: ITEM_IMAGE_ANALYSIS_PROMPT },
               {
                 inline_data: {
                   data: imageBase64,
@@ -101,7 +101,7 @@ export async function POST(request: Request) {
 
   if (!response.ok) {
     console.error(
-      "Gemini food image analysis failed:",
+      "Gemini BobEum item image analysis failed:",
       geminiResponse.error?.message ?? response.statusText,
     );
 
@@ -110,11 +110,11 @@ export async function POST(request: Request) {
 
   try {
     const analysisText = getAnalysisText(geminiResponse);
-    const analysis = parseFoodImageAnalysis(analysisText);
+    const analysis = parseItemImageAnalysis(analysisText);
 
     return NextResponse.json({ analysis });
   } catch (error) {
-    console.error("Gemini food image analysis parse failed:", error);
+    console.error("Gemini BobEum item image analysis parse failed:", error);
 
     return jsonError(
       "AI 응답을 해석하지 못했습니다. 수동 입력으로 등록해 주세요.",

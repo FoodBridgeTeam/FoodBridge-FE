@@ -1,4 +1,4 @@
-import { PUKYONG_DAEYEON_COORDINATES } from "@/features/foods/constants";
+import { BOBEUM_HOME_COORDINATES } from "@/features/foods/constants";
 import type { ReceiverProfile } from "@/features/matching/calculate-match-score";
 
 export type ReceiverSearchParams = Record<
@@ -27,26 +27,62 @@ function coordinateOrDefault(
     : fallback;
 }
 
+function numberOrNull(value: string | string[] | undefined): number | null {
+  const rawValue = firstValue(value).trim();
+  if (!rawValue) return null;
+
+  const parsed = Number(rawValue);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+}
+
+function booleanOrDefault(
+  value: string | string[] | undefined,
+  fallback: boolean,
+): boolean {
+  const rawValue = firstValue(value).trim().toLowerCase();
+  if (!rawValue) return fallback;
+  return ["1", "true", "yes", "on"].includes(rawValue);
+}
+
+function allergyList(value: string | string[] | undefined): string[] {
+  const rawValue = firstValue(value);
+  return rawValue
+    .split(",")
+    .map((allergy) => allergy.trim())
+    .filter(Boolean);
+}
+
 export function parseReceiverProfile(
   searchParams: ReceiverSearchParams,
 ): ReceiverProfile {
-  const preferredCategory = firstValue(
-    searchParams.preferred_category,
-  ).trim();
+  const species = firstValue(searchParams.species).trim();
+  const petName = firstValue(searchParams.pet_name).trim();
+  const petId = firstValue(searchParams.pet_id).trim();
+  const conditionNote = firstValue(searchParams.condition_note).trim();
 
   return {
+    age: numberOrNull(searchParams.age),
+    allergies: allergyList(searchParams.allergies),
+    conditionNote: conditionNote || null,
+    isPrescriptionDiet: booleanOrDefault(
+      searchParams.is_prescription_diet,
+      false,
+    ),
     latitude: coordinateOrDefault(
       searchParams.latitude,
       -90,
       90,
-      PUKYONG_DAEYEON_COORDINATES.latitude,
+      BOBEUM_HOME_COORDINATES.latitude,
     ),
     longitude: coordinateOrDefault(
       searchParams.longitude,
       -180,
       180,
-      PUKYONG_DAEYEON_COORDINATES.longitude,
+      BOBEUM_HOME_COORDINATES.longitude,
     ),
-    preferredCategory: preferredCategory || null,
+    name: petName || "콩이",
+    petId: petId || "demo-kongi",
+    species: species === "cat" ? "cat" : "dog",
+    weight: numberOrNull(searchParams.weight),
   };
 }

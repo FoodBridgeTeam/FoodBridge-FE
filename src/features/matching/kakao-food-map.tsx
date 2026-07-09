@@ -24,7 +24,7 @@ type KakaoFoodMapProps = {
 function createReceiverLabel(): HTMLDivElement {
   const label = document.createElement("div");
   label.textContent = "나";
-  label.setAttribute("aria-label", "수혜자 위치");
+  label.setAttribute("aria-label", "보호자 위치");
   label.className =
     "flex size-10 items-center justify-center rounded-full border-4 border-white bg-sky-500 text-xs font-black text-white shadow-lg";
   return label;
@@ -37,7 +37,7 @@ function createFoodPhotoMarker(food: MapFood, rank: number): HTMLButtonElement {
     "animate-marker-pop group relative flex w-20 flex-col items-center rounded-2xl border-4 border-white bg-white p-1 text-left shadow-xl transition hover:-translate-y-1 hover:shadow-2xl";
   marker.setAttribute(
     "aria-label",
-    `${rank}위 추천 식품 ${food.name} 지도 마커`,
+    `${rank}위 추천 나눔 ${food.name} 지도 마커`,
   );
 
   const rankLabel = document.createElement("span");
@@ -78,7 +78,7 @@ function createFoodDetailOverlay(food: MapFood, rank: number): HTMLDivElement {
 
   const rankLabel = document.createElement("p");
   rankLabel.className = "text-xs font-bold text-emerald-700";
-  rankLabel.textContent = `추천 ${rank}위 · ${Math.round(food.match.total * 100)}점`;
+  rankLabel.textContent = `추천 ${rank}위 · ${Math.round(food.match.matchScore)}점`;
 
   const name = document.createElement("strong");
   name.className = "mt-1 block text-base text-emerald-950";
@@ -224,7 +224,7 @@ export function KakaoFoodMap({
           <h2 className="mt-2 text-2xl font-black">픽업 위치 지도</h2>
         </div>
         <p className="text-sm text-emerald-100/70">
-          음식 사진 마커를 누르면 상세 정보를 볼 수 있습니다.
+          사진 마커를 누르면 나눔 정보를 볼 수 있습니다.
         </p>
       </div>
 
@@ -239,7 +239,7 @@ export function KakaoFoodMap({
             strategy="afterInteractive"
           />
           <div
-            aria-label="수혜자와 등록 식품의 카카오 지도"
+            aria-label="보호자와 등록 나눔의 카카오 지도"
             className="relative mt-6 h-[26rem] overflow-hidden rounded-2xl bg-emerald-900/50"
             ref={mapContainerRef}
             role="application"

@@ -1,20 +1,20 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  FOOD_IMAGE_ANALYSIS_CATEGORIES,
   extractJsonObject,
-  parseFoodImageAnalysis,
+  ITEM_ANALYSIS_CATEGORIES,
+  parseItemImageAnalysis,
 } from "@/features/foods/image-analysis";
 
-describe("FOOD_IMAGE_ANALYSIS_CATEGORIES", () => {
-  it("keeps the allowed registration categories explicit", () => {
-    expect(FOOD_IMAGE_ANALYSIS_CATEGORIES).toEqual([
-      "간편식",
-      "베이커리",
-      "음료",
-      "신선식품",
-      "유제품",
-      "기타",
+describe("ITEM_ANALYSIS_CATEGORIES", () => {
+  it("keeps the allowed BobEum item categories explicit", () => {
+    expect(ITEM_ANALYSIS_CATEGORIES).toEqual([
+      "dry_food",
+      "wet_food",
+      "treat",
+      "prescription",
+      "supply",
+      "unknown",
     ]);
   });
 });
@@ -24,78 +24,67 @@ describe("extractJsonObject", () => {
     expect(
       extractJsonObject(`
         \`\`\`json
-        {"name":"삼각김밥","confidence":0.9}
+        {"name":"강아지 사료","confidence":0.9}
         \`\`\`
       `),
     ).toEqual({
       confidence: 0.9,
-      name: "삼각김밥",
+      name: "강아지 사료",
     });
   });
 
   it("throws when no JSON object exists", () => {
-    expect(() => extractJsonObject("삼각김밥처럼 보입니다.")).toThrow(
+    expect(() => extractJsonObject("사료처럼 보입니다.")).toThrow(
       "AI 응답에서 JSON 객체를 찾지 못했습니다.",
     );
   });
 });
 
-describe("parseFoodImageAnalysis", () => {
-  it("accepts a safe food image analysis result", () => {
+describe("parseItemImageAnalysis", () => {
+  it("accepts a safe pet item image analysis result", () => {
     expect(
-      parseFoodImageAnalysis(
+      parseItemImageAnalysis(
         JSON.stringify({
-          category: "간편식",
+          brand: "멍멍브랜드",
+          category: "dry_food",
           confidence: 0.82,
-          expiry_date: "2026-07-07T18:00:00+09:00",
-          name: "삼각김밥",
-          notes: "포장 전면과 일부 날짜 표시가 보입니다.",
-          quantity: 3,
-          ready_to_eat: true,
-          storage: "냉장",
+          explanation: "제품 전면과 일부 성분 표시가 보입니다.",
+          expiryDateCandidate: "2030-07-07",
+          ingredients: ["닭고기", "쌀"],
+          lifeStage: "adult",
+          name: "강아지 건식사료",
+          opened: false,
+          openedAtCandidate: null,
+          remainingAmount: "2kg 중 1kg 남음",
+          targetSpecies: "dog",
+          warnings: ["닭고기 알러지 반려견은 주의가 필요합니다."],
         }),
       ),
-    ).toEqual({
-      category: "간편식",
-      confidence: 0.82,
-      expiry_date: "2026-07-07T18:00:00+09:00",
-      name: "삼각김밥",
-      notes: "포장 전면과 일부 날짜 표시가 보입니다.",
-      quantity: 3,
-      ready_to_eat: true,
-      storage: "냉장",
+    ).toMatchObject({
+      category: "dry_food",
+      ingredients: ["닭고기", "쌀"],
+      name: "강아지 건식사료",
+      targetSpecies: "dog",
     });
   });
 
   it("rejects invented free-form categories", () => {
     expect(() =>
-      parseFoodImageAnalysis(
+      parseItemImageAnalysis(
         JSON.stringify({
-          category: "매우 맛있는 음식",
+          category: "엄청 좋은 사료",
+          brand: null,
           confidence: 0.8,
-          expiry_date: null,
-          name: "도시락",
-          notes: null,
-          quantity: 1,
-          ready_to_eat: true,
-          storage: "냉장",
-        }),
-      ),
-    ).toThrow();
-  });
-
-  it("rejects non-positive quantities", () => {
-    expect(() =>
-      parseFoodImageAnalysis(
-        JSON.stringify({
-          category: "간편식",
-          confidence: 0.8,
-          expiry_date: null,
-          name: "삼각김밥",
-          notes: null,
-          quantity: 0,
-          ready_to_eat: true,
-          storage: "냉장",
+          explanation: "테스트",
+          expiryDateCandidate: null,
+          ingredients: [],
+          lifeStage: "unknown",
+          name: "강아지 사료",
+          opened: false,
+          openedAtCandidate: null,
+          remainingAmount: "1개",
+          targetSpecies: "dog",
+          warnings: [],
         }),
       ),
     ).toThrow();

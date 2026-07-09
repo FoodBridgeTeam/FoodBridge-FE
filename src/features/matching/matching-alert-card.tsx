@@ -1,7 +1,7 @@
 import type { MatchScore } from "@/features/matching/calculate-match-score";
 import type { Tables } from "@/types/database";
 
-type AlertFood = Tables<"foods"> & {
+type AlertFood = Tables<"items"> & {
   match: MatchScore;
 };
 
@@ -17,7 +17,14 @@ function formatDistance(distanceKm: number): string {
   return `${distanceKm.toFixed(1)}km`;
 }
 
-function formatHoursLeft(hoursLeft: number): string {
+function formatExpiryLeft(expiryDate: string | null): string {
+  if (!expiryDate) {
+    return "용품";
+  }
+
+  const hoursLeft =
+    (new Date(expiryDate).getTime() - Date.now()) / (60 * 60 * 1000);
+
   if (hoursLeft <= 0) {
     return "마감됨";
   }
@@ -30,12 +37,12 @@ function formatHoursLeft(hoursLeft: number): string {
 }
 
 export function MatchingAlertCard({ foods }: MatchingAlertCardProps) {
-  const recommendedFoods = foods.filter((food) => food.match.total > 0);
+  const recommendedFoods = foods.filter((food) => food.match.matchScore > 0);
   const topFood = recommendedFoods[0] ?? null;
   const urgentFood =
     recommendedFoods.length > 0
       ? [...recommendedFoods].sort(
-          (left, right) => left.match.hoursLeft - right.match.hoursLeft,
+          (left, right) => right.match.urgencyScore - left.match.urgencyScore,
         )[0]
       : null;
   const nearestFood =
@@ -57,10 +64,10 @@ export function MatchingAlertCard({ foods }: MatchingAlertCardProps) {
               Matching Alert
             </p>
             <h2 className="mt-1 text-2xl font-black text-amber-950">
-              현재 반경 30km 안에 추천 가능한 식품이 없습니다
+              현재 반경 10km 안에 추천 가능한 나눔이 없습니다
             </h2>
             <p className="mt-2 text-sm leading-6 text-amber-900/80">
-              수혜자 위치를 바꾸거나 공급자가 가까운 픽업 지점을 등록하면
+              보호자 위치를 바꾸거나 나눔자가 가까운 픽업 지점을 등록하면
               이곳에 추천 알림이 표시됩니다.
             </p>
           </div>
@@ -76,10 +83,10 @@ export function MatchingAlertCard({ foods }: MatchingAlertCardProps) {
           Matching Alert
         </p>
         <h2 className="mt-1 text-2xl font-black">
-          🔔 현재 위치 기준 추천 식품 {recommendedFoods.length}개 발견
+          🔔 현재 위치 기준 맞춤 나눔 {recommendedFoods.length}개 발견
         </h2>
         <p className="mt-2 text-sm text-emerald-50/80">
-          가장 추천되는 식품은 {topFood.name}입니다. 지도에서 사진 마커를
+          가장 추천되는 나눔은 {topFood.name}입니다. 지도에서 사진 마커를
           눌러 픽업 위치를 확인하세요.
         </p>
       </div>
@@ -91,7 +98,7 @@ export function MatchingAlertCard({ foods }: MatchingAlertCardProps) {
             {topFood.name}
           </dd>
           <dd className="mt-1 text-sm text-slate-600">
-            추천 점수 {Math.round(topFood.match.total * 100)}점
+            추천 점수 {Math.round(topFood.match.matchScore)}점
           </dd>
         </div>
         <div className="rounded-2xl bg-orange-50 p-4 transition hover:-translate-y-0.5">
@@ -100,7 +107,7 @@ export function MatchingAlertCard({ foods }: MatchingAlertCardProps) {
             {urgentFood?.name}
           </dd>
           <dd className="mt-1 text-sm text-slate-600">
-            {formatHoursLeft(urgentFood?.match.hoursLeft ?? 0)}
+            {formatExpiryLeft(urgentFood?.expiry_date ?? null)}
           </dd>
         </div>
         <div className="rounded-2xl bg-sky-50 p-4 transition hover:-translate-y-0.5">

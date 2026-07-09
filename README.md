@@ -1,18 +1,18 @@
-# FoodBridge Frontend
+# BobEum Frontend
 
-잉여 식품을 공급자와 주변 수혜자 사이에 연결하는 위치 기반 해커톤
-MVP의 Next.js 프론트엔드입니다.
+기호성 거부, 알러지 발견, 사료 교체로 남은 반려동물 사료·간식·용품을
+필요한 보호자에게 연결하는 해커톤 MVP의 Next.js 프론트엔드입니다.
 
-백엔드/DB 마이그레이션은 별도 `backend` 저장소에서 관리하는 것을
-전제로 분리되었습니다.
+백엔드/DB 마이그레이션은 별도 `backend` 저장소에서 관리하는 것을 전제로
+분리되어 있습니다.
 
 ## 기술 기반
 
 - Next.js App Router, React, TypeScript, Tailwind CSS
-- Supabase PostgreSQL 연동 클라이언트
+- Supabase PostgreSQL 및 Storage
+- Gemini API 이미지 분석
 - Kakao Maps JavaScript API
 - Browser Geolocation API
-- Gemini API food image analysis
 
 ## 로컬 실행
 
@@ -40,32 +40,29 @@ MVP의 Next.js 프론트엔드입니다.
    npm run dev
    ```
 
-## 디렉터리 계획
+## 디렉터리 구조
 
 ```text
 src/
 ├── app/                 # 화면과 Route Handlers
-├── features/            # foods, matching 도메인 로직
+├── features/            # registration, matching 도메인 로직
 ├── lib/
 │   └── supabase/        # 브라우저/서버 연결 경계
 └── types/               # DB 생성 타입과 공용 타입
-docs/                    # 제품/DB/알고리즘 규칙 사본
+docs/                    # 제품/DB/알고리즘 하네스 규칙 사본
 ```
 
-위치는 명시적인 버튼 입력 후 한 번만 가져옵니다. 연속·백그라운드 위치
-추적, 위치 기록, 실시간 알림, 채팅, 결제는 범위에서 제외합니다.
+`frontend/AGENTS.md`와 `frontend/docs/`는 프론트엔드 저장소 단위로
+하네스 엔지니어링을 적용하기 위한 System of Record입니다.
 
 ## 현재 구현
 
-- `/`: 서비스 홈
-- `/foods`: 일회성 현재 위치 또는 수동 좌표와 선호 카테고리를 기준으로
-  Haversine 거리를 계산한 추천 목록 및 카카오 픽업 위치 지도
-- `/foods/new`: 식품 정보 검증, 이미지 미리보기, Supabase Storage 업로드,
-  Gemini 사진 분석 기반 식품명·카테고리·유통기한 후보 자동 입력,
-  일회성 현재 위치·부경대 주변 시연 프리셋, `foods` 테이블 등록
+- `/`: 밥이음 서비스 홈과 DB 기반 실시간 추천 카드
+- `/foods`: 반려동물 프로필, 알러지, 처방식 여부, 위치를 기반으로 한 AI
+  궁합 추천 목록 및 카카오 픽업 위치 지도
+- `/foods/new`: 제품 사진·성분표 사진 업로드, Gemini 사진 분석 기반
+  등록값 자동 입력, Supabase Storage 업로드, GPS/시연 좌표 기반 나눔 등록
+- 수령 신청 시 `items.status`를 `reserved`로 변경하고 `matches` 기록 생성
 
-식품 이미지는 DB 스키마를 변경하지 않고 공개 `food-images` 버킷의
-`{foodId}/image` 경로에 저장합니다.
-
-AI 사진 분석은 공급자 입력을 돕는 기능입니다. 유통기한은 이미지에 확실히
-보일 때만 후보로 채우며, 최종 등록 전 공급자가 직접 확인·수정해야 합니다.
+AI 사진 분석은 등록 보조 기능입니다. 유통기한, 개봉일, 성분, 처방식 여부는
+최종 등록 전 사람이 직접 확인해야 하며, 수의학적 진단을 제공하지 않습니다.

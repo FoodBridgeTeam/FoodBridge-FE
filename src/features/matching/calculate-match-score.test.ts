@@ -4,22 +4,42 @@ import {
   calculateHaversineDistanceKm,
   calculateMatchScore,
   rankFoodsByMatchScore,
-  type MatchableFood,
+  type MatchableItem,
+  type ReceiverProfile,
 } from "@/features/matching/calculate-match-score";
 
 const now = new Date("2030-07-07T00:00:00.000Z");
 
-type TestFood = MatchableFood & { id: string };
+const pet: ReceiverProfile = {
+  age: 4,
+  allergies: ["닭고기"],
+  conditionNote: null,
+  isPrescriptionDiet: false,
+  latitude: 35.1338,
+  longitude: 129.1057,
+  name: "콩이",
+  petId: "demo-kongi",
+  species: "dog",
+  weight: 5,
+};
 
-function createFood(
-  overrides: Partial<TestFood> = {},
-): TestFood {
+type TestItem = MatchableItem & { id: string; name: string };
+
+function createItem(overrides: Partial<TestItem> = {}): TestItem {
   return {
-    id: "food-1",
-    category: "베이커리",
-    expiry_date: "2030-07-07T09:00:00.000Z",
-    latitude: 0,
-    longitude: 0.1,
+    category: "dry_food",
+    created_at: "2030-07-06T00:00:00.000Z",
+    expiry_date: "2030-07-10",
+    id: "item-1",
+    ingredients: ["연어", "쌀"],
+    latitude: 35.134,
+    life_stage: "adult",
+    longitude: 129.106,
+    name: "강아지 사료",
+    opened: false,
+    opened_at: null,
+    status: "available",
+    target_species: "dog",
     ...overrides,
   };
 }
@@ -34,113 +54,59 @@ describe("calculateMatchScore", () => {
     ).toBeCloseTo(111.1949, 3);
   });
 
-  it("uses the exact distance, expiry, and preference weights", () => {
+  it("scores suitable nearby items with compatibility, distance, and urgency", () => {
+    const result = calculateMatchScore(createItem(), pet, now);
+
+    expect(result.excluded).toBe(false);
+    expect(result.compatibility).toBe("suitable");
+    expect(result.compatibilityScore).toBe(100);
+    expect(result.distanceScore).toBeGreaterThan(99);
+    expect(result.urgencyScore).toBe(85);
+    expect(result.matchScore).toBeGreaterThan(80);
+  });
+
+  it("excludes allergy conflicts", () => {
     const result = calculateMatchScore(
-      createFood(),
-      {
-        latitude: 0,
-        longitude: 0,
-        preferredCategory: "베이커리",
-      },
+      createItem({ ingredients: ["닭고기", "쌀"] }),
+      pet,
       now,
     );
 
-    expect(result.distanceKm).toBeCloseTo(11.1195, 3);
-    expect(result.distanceScore).toBeCloseTo(1 / (1 + 11.1195), 5);
-    expect(result.expiryScore).toBeCloseTo(1 / 10);
-    expect(result.preferenceScore).toBe(1);
-    expect(result.total).toBeCloseTo(
-      0.4 * (1 / (1 + 11.1195)) + 0.4 * (1 / 10) + 0.2,
-      5,
-    );
+    expect(result.excluded).toBe(true);
+    expect(result.compatibility).toBe("unsuitable");
+    expect(result.matchScore).toBe(0);
   });
 
-  it("returns a total score of zero as soon as food is expired", () => {
+  it("excludes items outside the recommended distance", () => {
     const result = calculateMatchScore(
-      createFood({ expiry_date: "2030-07-06T23:59:59.000Z" }),
-      {
-        latitude: 0,
-        longitude: 1,
-        preferredCategory: "베이커리",
-      },
-      now,
-    );
-
-    expect(result.total).toBe(0);
-  });
-
-  it("returns a total score of zero when food is outside the recommended distance", () => {
-    const result = calculateMatchScore(
-      createFood({
-        expiry_date: "2030-07-07T01:00:00.000Z",
-        latitude: 37.5665,
-        longitude: 126.978,
-      }),
-      {
-        latitude: 35.1338,
-        longitude: 129.1057,
-        preferredCategory: "베이커리",
-      },
+      createItem({ latitude: 37.5665, longitude: 126.978 }),
+      pet,
       now,
     );
 
     expect(result.distanceKm).toBeGreaterThan(300);
-    expect(result.total).toBe(0);
+    expect(result.excluded).toBe(true);
+    expect(result.matchScore).toBe(0);
   });
 
-  it("sorts foods from highest to lowest total score", () => {
+  it("sorts recommended items from highest to lowest match score", () => {
     const ranked = rankFoodsByMatchScore(
       [
-        createFood({
+        createItem({
           id: "far",
-          category: "채소",
           latitude: 35.1796,
           longitude: 129.0756,
         }),
-        createFood({
-          id: "preferred",
-          latitude: 37.5665,
-          longitude: 126.978,
+        createItem({
+          id: "near",
+          latitude: 35.134,
+          longitude: 129.106,
         }),
       ],
-      {
-        latitude: 37.5665,
-        longitude: 126.978,
-        preferredCategory: "베이커리",
-      },
+      pet,
       now,
     );
 
-    expect(ranked.map((food) => food.id)).toEqual(["preferred", "far"]);
-  });
-
-  it("prioritizes a nearby food over a far urgent food", () => {
-    const ranked = rankFoodsByMatchScore(
-      [
-        createFood({
-          id: "far-urgent",
-          expiry_date: "2030-07-07T01:00:00.000Z",
-          latitude: 37.5665,
-          longitude: 126.978,
-        }),
-        createFood({
-          id: "near-less-urgent",
-          expiry_date: "2030-07-10T00:00:00.000Z",
-          latitude: 35.1891679,
-          longitude: 128.9040327,
-        }),
-      ],
-      {
-        latitude: 35.1338,
-        longitude: 129.1057,
-        preferredCategory: null,
-      },
-      now,
-    );
-
-    expect(ranked.map((food) => food.id)).toEqual([
-      "near-less-urgent",
-      "far-urgent",
-    ]);
+    expect(ranked.map((item) => item.id)).toEqual(["near", "far"]);
   });
 });
