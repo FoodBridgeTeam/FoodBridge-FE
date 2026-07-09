@@ -10,23 +10,36 @@ export const metadata: Metadata = {
 
 export default function NewFoodPage() {
   return (
-    <main className="mx-auto min-h-screen max-w-5xl px-5 py-10 md:py-16">
-      <Link
-        className="inline-flex rounded-full bg-white/70 px-4 py-2 text-sm font-bold text-emerald-800 shadow-sm transition hover:-translate-x-0.5 hover:text-emerald-950"
-        href="/"
-      >
-        ← 밥이음 홈
-      </Link>
-      <header className="animate-fade-up mb-10 mt-8 overflow-hidden rounded-[2rem] bg-emerald-950 p-7 text-white shadow-2xl shadow-emerald-950/15 md:p-10">
-        <p className="inline-flex rounded-full bg-emerald-300/15 px-4 py-2 text-sm font-black tracking-[0.16em] text-emerald-200 uppercase">
-          Giver · AI assisted
-        </p>
-        <h1 className="mt-5 text-4xl font-black tracking-tight md:text-5xl">
-          사진 한 장으로 나눔을 시작하세요
+    <main className="brand-shell max-w-5xl">
+      <nav className="brand-nav animate-fade-up">
+        <div className="flex items-center gap-3">
+          <Link className="brand-nav-button" href="/">
+            ←
+          </Link>
+          <div className="text-sm font-black text-slate-500 md:text-base">
+            BobEum <span className="mx-2 text-[var(--line)]">/</span>
+            <span className="text-black">Register</span>
+          </div>
+        </div>
+        <div className="brand-search">
+          <span>⌕</span>
+          <span>Upload item photo first...</span>
+        </div>
+        <Link className="brand-avatar" href="/foods">
+          AI
+        </Link>
+      </nav>
+
+      <header className="brand-card animate-fade-up-delay-1 mb-10 p-7 md:p-10">
+        <p className="brand-kicker">Giver · AI assisted</p>
+        <h1 className="brand-heading mt-5 text-5xl md:text-6xl">
+          REGISTER
+          <br />
+          SHARING
         </h1>
-        <p className="mt-4 max-w-3xl text-lg leading-8 text-emerald-50/80">
-          AI가 제품 사진과 성분표를 읽어 등록을 돕고, GPS 픽업 위치와 함께
-          필요한 반려동물에게 추천합니다.
+        <p className="mt-5 max-w-3xl text-lg font-bold leading-8 text-slate-600">
+          사진 한 장으로 제품명, 성분, 대상 동물, 유통기한 후보를 채우고
+          픽업 위치까지 등록합니다.
         </p>
       </header>
       <FoodRegistrationForm />

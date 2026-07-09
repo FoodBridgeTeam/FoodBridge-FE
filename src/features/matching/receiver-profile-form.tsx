@@ -12,7 +12,7 @@ type ReceiverProfileFormProps = {
 };
 
 const inputClassName =
-  "w-full rounded-2xl border border-emerald-950/15 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:border-emerald-600 focus:ring-4 focus:ring-emerald-100";
+  "brand-input";
 
 export function ReceiverProfileForm({
   receiver,
@@ -90,11 +90,11 @@ export function ReceiverProfileForm({
   return (
     <form
       action="/foods"
-      className="surface-card animate-fade-up-delay-1 grid gap-4 rounded-[1.75rem] p-5 md:grid-cols-4 md:items-end"
+      className="brand-card animate-fade-up-delay-1 grid gap-4 p-5 md:grid-cols-4 md:items-end"
       method="get"
     >
-      <div className="flex flex-col gap-3 rounded-2xl bg-gradient-to-r from-emerald-50 to-orange-50 p-4 md:col-span-4 md:flex-row md:items-end">
-        <label className="flex-1 text-sm font-bold text-emerald-950">
+      <div className="brand-card-flat flex flex-col gap-3 p-4 md:col-span-4 md:flex-row md:items-end">
+        <label className="flex-1 text-sm font-black text-[var(--accent-dark)]">
           시연용 보호자 위치
           <select
             className={`${inputClassName} mt-2`}
@@ -112,7 +112,7 @@ export function ReceiverProfileForm({
           </select>
         </label>
         <button
-          className="rounded-2xl border border-emerald-700 bg-white px-5 py-2.5 text-sm font-bold text-emerald-800 transition hover:-translate-y-0.5 hover:bg-emerald-100 disabled:cursor-wait disabled:opacity-60"
+          className="brand-button-soft disabled:cursor-wait disabled:opacity-60"
           disabled={location.requestState === "loading"}
           onClick={handleUseCurrentLocation}
           type="button"
@@ -135,7 +135,7 @@ export function ReceiverProfileForm({
         ) : null}
       </div>
       <input name="pet_id" type="hidden" value={receiver.petId} />
-      <label className="text-sm font-bold text-emerald-950">
+      <label className="text-sm font-black text-[var(--accent-dark)]">
         반려동물 이름
         <input
           className={`${inputClassName} mt-2`}
@@ -146,7 +146,7 @@ export function ReceiverProfileForm({
           type="text"
         />
       </label>
-      <label className="text-sm font-bold text-emerald-950">
+      <label className="text-sm font-black text-[var(--accent-dark)]">
         종
         <select
           className={`${inputClassName} mt-2`}
@@ -157,7 +157,7 @@ export function ReceiverProfileForm({
           <option value="cat">고양이</option>
         </select>
       </label>
-      <label className="text-sm font-bold text-emerald-950">
+      <label className="text-sm font-black text-[var(--accent-dark)]">
         나이
         <input
           className={`${inputClassName} mt-2`}
@@ -169,7 +169,7 @@ export function ReceiverProfileForm({
           type="number"
         />
       </label>
-      <label className="text-sm font-bold text-emerald-950">
+      <label className="text-sm font-black text-[var(--accent-dark)]">
         몸무게(kg)
         <input
           className={`${inputClassName} mt-2`}
@@ -181,7 +181,7 @@ export function ReceiverProfileForm({
           type="number"
         />
       </label>
-      <label className="text-sm font-bold text-emerald-950">
+      <label className="text-sm font-black text-[var(--accent-dark)]">
         위도
         <input
           className={`${inputClassName} mt-2`}
@@ -195,7 +195,7 @@ export function ReceiverProfileForm({
           value={location.latitude}
         />
       </label>
-      <label className="text-sm font-bold text-emerald-950">
+      <label className="text-sm font-black text-[var(--accent-dark)]">
         경도
         <input
           className={`${inputClassName} mt-2`}
@@ -209,7 +209,7 @@ export function ReceiverProfileForm({
           value={location.longitude}
         />
       </label>
-      <label className="text-sm font-bold text-emerald-950">
+      <label className="text-sm font-black text-[var(--accent-dark)]">
         알러지 성분
         <input
           className={`${inputClassName} mt-2`}
@@ -220,7 +220,7 @@ export function ReceiverProfileForm({
           type="text"
         />
       </label>
-      <label className="text-sm font-bold text-emerald-950 md:col-span-2">
+      <label className="text-sm font-black text-[var(--accent-dark)] md:col-span-2">
         건강/급여 메모
         <input
           className={`${inputClassName} mt-2`}
@@ -231,7 +231,7 @@ export function ReceiverProfileForm({
           type="text"
         />
       </label>
-      <label className="flex items-center gap-3 rounded-2xl bg-white px-4 py-3 text-sm font-bold text-emerald-950">
+      <label className="brand-card-flat flex items-center gap-3 px-4 py-3 text-sm font-black text-[var(--accent-dark)]">
         <input
           className="size-4 accent-emerald-700"
           defaultChecked={receiver.isPrescriptionDiet}
@@ -241,7 +241,7 @@ export function ReceiverProfileForm({
         처방식 급여 중
       </label>
       <button
-        className="rounded-2xl bg-emerald-700 px-5 py-2.5 text-sm font-black text-white shadow-lg shadow-emerald-900/15 transition hover:-translate-y-0.5 hover:bg-emerald-800"
+        className="brand-button-dark"
         type="submit"
       >
         다시 추천

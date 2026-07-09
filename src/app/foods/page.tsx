@@ -63,30 +63,34 @@ export default async function FoodsPage({ searchParams }: FoodsPageProps) {
   const kakaoMapJavascriptKey = getKakaoMapJavascriptKey();
 
   return (
-    <main className="mx-auto min-h-screen max-w-6xl px-5 py-10 md:py-16">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <Link
-          className="inline-flex rounded-full bg-white/70 px-4 py-2 text-sm font-bold text-emerald-800 shadow-sm transition hover:-translate-x-0.5 hover:text-emerald-950"
-          href="/"
-        >
-          ← 밥이음 홈
-        </Link>
-        <Link
-          className="rounded-full bg-emerald-700 px-5 py-2.5 text-sm font-black text-white shadow-lg shadow-emerald-900/15 transition hover:-translate-y-0.5 hover:bg-emerald-800"
-          href="/foods/new"
-        >
+    <main className="brand-shell">
+      <nav className="brand-nav animate-fade-up">
+        <div className="flex items-center gap-3">
+          <Link className="brand-nav-button" href="/">
+            ←
+          </Link>
+          <div className="text-sm font-black text-slate-500 md:text-base">
+            BobEum <span className="mx-2 text-[var(--line)]">/</span>
+            <span className="text-black">Matching</span>
+          </div>
+        </div>
+        <div className="brand-search">
+          <span>⌕</span>
+          <span>Search pet-compatible sharing...</span>
+        </div>
+        <Link className="brand-button" href="/foods/new">
           + 나눔 등록
         </Link>
-      </div>
+      </nav>
 
-      <header className="animate-fade-up mt-8 rounded-[2rem] bg-white/75 p-7 shadow-sm backdrop-blur md:p-10">
-        <p className="inline-flex rounded-full bg-orange-100 px-4 py-2 text-sm font-black tracking-[0.16em] text-orange-700 uppercase">
-          Pet profile · AI matching
-        </p>
-        <h1 className="mt-3 text-4xl font-black tracking-tight text-emerald-950 md:text-5xl">
-          우리 아이에게 맞는 나눔
+      <header className="brand-card animate-fade-up-delay-1 p-7 md:p-10">
+        <p className="brand-kicker">Pet profile · AI matching</p>
+        <h1 className="brand-heading mt-5 text-5xl md:text-7xl">
+          MATCHING
+          <br />
+          OVERVIEW
         </h1>
-        <p className="mt-4 max-w-3xl text-lg leading-8 text-slate-600">
+        <p className="mt-5 max-w-3xl text-lg font-bold leading-8 text-slate-600">
           10km 이내 사료·간식·용품을 대상으로 반려동물 종, 알러지, 처방식
           여부를 먼저 걸러낸 뒤 궁합 40%, 거리 30%, 유통기한 긴급도 30%로
           추천합니다.
@@ -112,12 +116,12 @@ export default async function FoodsPage({ searchParams }: FoodsPageProps) {
       <section className="mt-10">
         <div className="mb-5 flex items-end justify-between gap-4">
           <div>
-            <p className="text-sm font-bold text-emerald-700">AI MATCHING</p>
-            <h2 className="mt-1 text-2xl font-black text-emerald-950">
+            <p className="brand-kicker">AI matching</p>
+            <h2 className="mt-2 text-3xl font-black text-black">
               추천 결과
             </h2>
           </div>
-          <span className="text-sm font-bold text-slate-500">
+          <span className="brand-pill">
             {foods.length}개 나눔
           </span>
         </div>
@@ -129,8 +133,8 @@ export default async function FoodsPage({ searchParams }: FoodsPageProps) {
             ))}
           </div>
         ) : (
-          <div className="rounded-2xl border border-dashed border-emerald-900/20 bg-white px-6 py-16 text-center">
-            <h3 className="text-xl font-black text-emerald-950">
+          <div className="brand-card px-6 py-16 text-center">
+            <h3 className="text-xl font-black text-[var(--accent-dark)]">
               추천 가능한 나눔이 없습니다
             </h3>
             <p className="mt-2 text-slate-500">

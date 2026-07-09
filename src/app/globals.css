@@ -1,11 +1,15 @@
 @import "tailwindcss";
 
 :root {
-  --background: #fff7ed;
-  --foreground: #12352c;
-  --surface: #ffffff;
-  --accent: #047857;
-  --muted: #64746d;
+  --background: #fffaf0;
+  --foreground: #171717;
+  --surface: #fffdf7;
+  --accent: #16784a;
+  --accent-dark: #06452f;
+  --mint: #9ef2bd;
+  --orange: #ff7a1a;
+  --line: #d9c9ae;
+  --muted: #697386;
 }
 
 * {
@@ -21,15 +25,26 @@ body {
   min-height: 100vh;
   margin: 0;
   background:
-    radial-gradient(circle at top left, rgb(110 231 183 / 38%), transparent 34rem),
-    radial-gradient(circle at top right, rgb(251 146 60 / 22%), transparent 28rem),
-    linear-gradient(135deg, #fff7ed 0%, #f0fdf4 48%, #ecfdf5 100%),
+    radial-gradient(circle at 1px 1px, rgb(22 120 74 / 0.08) 1px, transparent 0) 0 0 / 18px 18px,
+    linear-gradient(90deg, var(--accent) 0 0.8rem, transparent 0.8rem),
+    linear-gradient(180deg, #fffdf7 0%, #fff7e8 100%),
     var(--background);
   color: var(--foreground);
   font-family:
+    "Apple SD Gothic Neo",
+    "Arial Rounded MT Bold",
     Arial,
     Helvetica,
     sans-serif;
+}
+
+body::before {
+  position: fixed;
+  inset: 0 auto 0 0;
+  z-index: -1;
+  width: 0.8rem;
+  background: var(--accent);
+  content: "";
 }
 
 a {
@@ -38,7 +53,7 @@ a {
 }
 
 ::selection {
-  background: rgb(251 146 60 / 35%);
+  background: rgb(255 122 26 / 35%);
 }
 
 @keyframes fade-up {
@@ -108,10 +123,214 @@ a {
 }
 
 .surface-card {
-  background: rgb(255 255 255 / 0.86);
-  border: 1px solid rgb(6 78 59 / 0.1);
-  box-shadow: 0 24px 70px rgb(15 23 42 / 0.08);
-  backdrop-filter: blur(18px);
+  background: rgb(255 253 247 / 0.9);
+  border: 2px solid rgb(217 201 174 / 0.9);
+  box-shadow: 8px 8px 0 var(--accent);
+  backdrop-filter: blur(14px);
+}
+
+.brand-shell {
+  width: min(100% - 2rem, 74rem);
+  margin-inline: auto;
+  padding-block: 1rem 4rem;
+}
+
+.brand-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 3rem;
+  padding: 0.8rem 1rem;
+  border: 2px solid var(--line);
+  border-radius: 999px;
+  background: rgb(255 247 232 / 0.9);
+  box-shadow: 0 2px 0 rgb(6 69 47 / 0.16);
+}
+
+.brand-nav-button,
+.brand-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  border: 2px solid var(--line);
+  border-radius: 1.1rem;
+  background: #fffaf0;
+  color: var(--foreground);
+  font-weight: 900;
+  box-shadow: 0 2px 0 rgb(6 69 47 / 0.14);
+}
+
+.brand-avatar {
+  border-color: #98e6b1;
+  border-radius: 999px;
+  color: var(--accent);
+}
+
+.brand-search {
+  display: none;
+  min-width: 16rem;
+  max-width: 32rem;
+  flex: 1;
+  align-items: center;
+  gap: 0.65rem;
+  border: 2px solid var(--line);
+  border-radius: 1.25rem;
+  background: #fff7e8;
+  padding: 0.8rem 1rem;
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.brand-card,
+.brand-card-flat {
+  position: relative;
+  border: 2px solid var(--line);
+  border-radius: 2rem;
+  background:
+    radial-gradient(circle at 1px 1px, rgb(22 120 74 / 0.08) 1px, transparent 0) 0 0 / 16px 16px,
+    var(--surface);
+}
+
+.brand-card {
+  box-shadow: 8px 8px 0 var(--accent);
+}
+
+.brand-card-flat {
+  box-shadow: 0 2px 0 rgb(6 69 47 / 0.12);
+}
+
+.brand-panel-dark {
+  border: 2px solid var(--accent-dark);
+  border-radius: 2.3rem;
+  background: var(--accent-dark);
+  color: #fffdf7;
+  box-shadow: 8px 8px 0 rgb(255 122 26 / 0.35);
+}
+
+.brand-heading {
+  color: #101010;
+  font-family:
+    "Arial Black",
+    "Apple SD Gothic Neo",
+    Arial,
+    sans-serif;
+  font-weight: 950;
+  letter-spacing: -0.075em;
+  line-height: 0.92;
+}
+
+.brand-kicker {
+  color: var(--accent);
+  font-size: 0.78rem;
+  font-weight: 950;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+
+.brand-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border: 2px solid rgb(22 120 74 / 0.16);
+  border-radius: 999px;
+  background: #d9ffe6;
+  padding: 0.45rem 0.85rem;
+  color: var(--accent);
+  font-size: 0.78rem;
+  font-weight: 950;
+}
+
+.brand-pill-orange {
+  border-color: rgb(255 122 26 / 0.18);
+  background: #fff0d8;
+  color: #b54005;
+}
+
+.brand-button,
+.brand-button-dark,
+.brand-button-soft {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 1.15rem;
+  padding: 0.85rem 1.2rem;
+  font-weight: 950;
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease,
+    background 180ms ease;
+}
+
+.brand-button:hover,
+.brand-button-dark:hover,
+.brand-button-soft:hover {
+  transform: translateY(-2px);
+}
+
+.brand-button {
+  border: 2px solid var(--accent);
+  background: var(--accent);
+  color: #fffdf7;
+  box-shadow: 4px 4px 0 var(--accent-dark);
+}
+
+.brand-button-dark {
+  border: 2px solid #101010;
+  background: #101010;
+  color: #fffdf7;
+  box-shadow: 4px 4px 0 var(--accent);
+}
+
+.brand-button-soft {
+  border: 2px solid var(--line);
+  background: #fff7e8;
+  color: var(--accent-dark);
+  box-shadow: 3px 3px 0 rgb(6 69 47 / 0.18);
+}
+
+.brand-input {
+  width: 100%;
+  border: 2px solid var(--line);
+  border-radius: 1.1rem;
+  background: #fffdf7;
+  padding: 0.85rem 1rem;
+  color: var(--foreground);
+  font-weight: 800;
+  outline: none;
+  transition:
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    transform 180ms ease;
+}
+
+.brand-input::placeholder {
+  color: #9aa1ae;
+}
+
+.brand-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px rgb(158 242 189 / 0.45);
+}
+
+.brand-stat-line {
+  height: 3.5rem;
+  border-bottom: 2px solid var(--line);
+  background: linear-gradient(to right, rgb(22 120 74 / 0.14), transparent);
+  clip-path: polygon(0 65%, 18% 55%, 35% 58%, 52% 48%, 72% 52%, 100% 38%, 100% 100%, 0 100%);
+}
+
+.brand-orange-line {
+  background: linear-gradient(to right, rgb(255 122 26 / 0.18), transparent);
+  clip-path: polygon(0 35%, 22% 42%, 44% 50%, 68% 58%, 100% 66%, 100% 100%, 0 100%);
+}
+
+@media (min-width: 768px) {
+  .brand-search {
+    display: flex;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

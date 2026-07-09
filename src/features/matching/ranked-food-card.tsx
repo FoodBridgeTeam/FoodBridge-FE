@@ -59,8 +59,8 @@ export function RankedFoodCard({ food, rank }: RankedFoodCardProps) {
         : "강아지·고양이";
 
   return (
-    <article className="animate-fade-up grid overflow-hidden rounded-[2rem] border border-emerald-950/10 bg-white/90 shadow-sm backdrop-blur transition hover:-translate-y-1 hover:shadow-2xl hover:shadow-emerald-950/10 sm:grid-cols-[15rem_1fr]">
-      <div className="relative min-h-64 bg-emerald-100 sm:min-h-full">
+    <article className="brand-card animate-fade-up grid overflow-hidden transition hover:-translate-y-1 sm:grid-cols-[15rem_1fr]">
+      <div className="relative m-4 min-h-64 overflow-hidden rounded-[1.5rem] border-2 border-[var(--line)] bg-emerald-100 sm:min-h-[calc(100%-2rem)]">
         <Image
           alt={`${food.name} 사진`}
           className="object-cover"
@@ -68,24 +68,24 @@ export function RankedFoodCard({ food, rank }: RankedFoodCardProps) {
           sizes="(max-width: 640px) 100vw, 224px"
           src={food.imageUrl}
         />
-        <span className="absolute top-4 left-4 rounded-full bg-emerald-950/95 px-3 py-1 text-sm font-black text-white shadow-lg">
+        <span className="absolute top-4 left-4 rounded-full bg-[var(--accent-dark)] px-3 py-1 text-sm font-black text-white shadow-lg">
           추천 {rank}위
         </span>
-        <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-emerald-950/45 to-transparent" />
+        <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-[var(--accent-dark)]/45 to-transparent" />
       </div>
       <div className="p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-800">
+            <span className="brand-pill">
               {food.category}
             </span>
-            <h2 className="mt-3 text-2xl font-black text-emerald-950">
+            <h2 className="mt-3 text-3xl font-black text-[var(--accent-dark)]">
               {food.name}
             </h2>
           </div>
-          <div className="rounded-2xl bg-emerald-50 px-4 py-3 text-right">
-            <p className="text-xs font-bold text-emerald-700">AI 추천</p>
-            <strong className="text-3xl font-black text-emerald-800">
+          <div className="brand-card-flat px-4 py-3 text-right">
+            <p className="text-xs font-black text-[var(--accent)]">AI 추천</p>
+            <strong className="text-3xl font-black text-[var(--accent)]">
               {scorePercent}
             </strong>
             <span className="ml-1 text-sm font-bold text-slate-500">점</span>
@@ -93,13 +93,13 @@ export function RankedFoodCard({ food, rank }: RankedFoodCardProps) {
         </div>
 
         <dl className="mt-5 grid grid-cols-2 gap-3 text-sm">
-          <div className="rounded-2xl bg-emerald-50 p-3">
+          <div className="brand-card-flat p-3">
             <dt className="text-slate-500">수량</dt>
             <dd className="mt-1 font-bold text-slate-900">
               {food.remaining_amount}
             </dd>
           </div>
-          <div className="rounded-2xl bg-orange-50 p-3">
+          <div className="brand-card-flat p-3">
             <dt className="text-slate-500">남은 시간</dt>
             <dd className="mt-1 font-bold text-slate-900">
               {formatExpiryLeft(food.expiry_date)}
@@ -118,17 +118,17 @@ export function RankedFoodCard({ food, rank }: RankedFoodCardProps) {
         </p>
 
         <div className="mt-5 flex flex-wrap gap-2 text-xs font-bold">
-          <span className="rounded-full bg-sky-50 px-3 py-1.5 text-sky-800 shadow-sm">
+          <span className="rounded-full border border-sky-100 bg-sky-50 px-3 py-1.5 text-sky-800 shadow-sm">
             거리 {weightedScore(food.match.distanceScore, 0.3)}
           </span>
-          <span className="rounded-full bg-orange-50 px-3 py-1.5 text-orange-800 shadow-sm">
+          <span className="rounded-full border border-orange-100 bg-orange-50 px-3 py-1.5 text-orange-800 shadow-sm">
             긴급도 {weightedScore(food.match.urgencyScore, 0.3)}
           </span>
-          <span className="rounded-full bg-violet-50 px-3 py-1.5 text-violet-800 shadow-sm">
+          <span className="rounded-full border border-violet-100 bg-violet-50 px-3 py-1.5 text-violet-800 shadow-sm">
             궁합 {weightedScore(food.match.compatibilityScore, 0.4)}
           </span>
         </div>
-        <p className="mt-3 rounded-2xl bg-slate-50 px-4 py-3 text-sm leading-6 text-slate-600">
+        <p className="brand-card-flat mt-3 px-4 py-3 text-sm leading-6 text-slate-600">
           {food.match.compatibilityReason}
         </p>
 

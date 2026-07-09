@@ -54,19 +54,19 @@ export function MatchingAlertCard({ foods }: MatchingAlertCardProps) {
 
   if (!topFood) {
     return (
-      <section className="animate-fade-up-delay-1 rounded-[1.75rem] border border-amber-200 bg-amber-50/90 p-5 shadow-sm">
+      <section className="brand-card animate-fade-up-delay-1 p-5">
         <div className="flex gap-4">
-          <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-amber-100 text-2xl">
+          <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl border-2 border-[var(--line)] bg-orange-100 text-2xl">
             🔔
           </div>
           <div>
-            <p className="text-sm font-black tracking-[0.14em] text-amber-700 uppercase">
+            <p className="brand-kicker">
               Matching Alert
             </p>
-            <h2 className="mt-1 text-2xl font-black text-amber-950">
+            <h2 className="mt-2 text-2xl font-black text-black">
               현재 반경 10km 안에 추천 가능한 나눔이 없습니다
             </h2>
-            <p className="mt-2 text-sm leading-6 text-amber-900/80">
+            <p className="mt-2 text-sm font-bold leading-6 text-slate-600">
               보호자 위치를 바꾸거나 나눔자가 가까운 픽업 지점을 등록하면
               이곳에 추천 알림이 표시됩니다.
             </p>
@@ -77,9 +77,9 @@ export function MatchingAlertCard({ foods }: MatchingAlertCardProps) {
   }
 
   return (
-    <section className="animate-fade-up-delay-1 overflow-hidden rounded-[1.75rem] border border-emerald-200 bg-white/90 shadow-xl shadow-emerald-950/10 backdrop-blur">
-      <div className="bg-gradient-to-r from-emerald-950 via-emerald-800 to-orange-500 px-5 py-5 text-white">
-        <p className="text-xs font-black tracking-[0.16em] text-emerald-300 uppercase">
+    <section className="brand-panel-dark animate-fade-up-delay-1 overflow-hidden p-0">
+      <div className="px-6 py-6 text-white">
+        <p className="text-xs font-black tracking-[0.16em] text-emerald-200 uppercase">
           Matching Alert
         </p>
         <h2 className="mt-1 text-2xl font-black">
@@ -91,28 +91,28 @@ export function MatchingAlertCard({ foods }: MatchingAlertCardProps) {
         </p>
       </div>
 
-      <dl className="grid gap-3 p-5 md:grid-cols-3">
-        <div className="rounded-2xl bg-emerald-50 p-4 transition hover:-translate-y-0.5">
-          <dt className="text-sm font-bold text-emerald-700">최우선 추천</dt>
-          <dd className="mt-2 text-lg font-black text-emerald-950">
+      <dl className="grid gap-3 bg-[#fffdf7] p-5 text-black md:grid-cols-3">
+        <div className="brand-card-flat p-4 transition hover:-translate-y-0.5">
+          <dt className="text-sm font-black text-[var(--accent)]">최우선 추천</dt>
+          <dd className="mt-2 text-lg font-black text-[var(--accent-dark)]">
             {topFood.name}
           </dd>
           <dd className="mt-1 text-sm text-slate-600">
             추천 점수 {Math.round(topFood.match.matchScore)}점
           </dd>
         </div>
-        <div className="rounded-2xl bg-orange-50 p-4 transition hover:-translate-y-0.5">
-          <dt className="text-sm font-bold text-orange-700">가장 긴급</dt>
-          <dd className="mt-2 text-lg font-black text-amber-950">
+        <div className="brand-card-flat p-4 transition hover:-translate-y-0.5">
+          <dt className="text-sm font-black text-orange-700">가장 긴급</dt>
+          <dd className="mt-2 text-lg font-black text-black">
             {urgentFood?.name}
           </dd>
           <dd className="mt-1 text-sm text-slate-600">
             {formatExpiryLeft(urgentFood?.expiry_date ?? null)}
           </dd>
         </div>
-        <div className="rounded-2xl bg-sky-50 p-4 transition hover:-translate-y-0.5">
-          <dt className="text-sm font-bold text-sky-700">가장 가까움</dt>
-          <dd className="mt-2 text-lg font-black text-sky-950">
+        <div className="brand-card-flat p-4 transition hover:-translate-y-0.5">
+          <dt className="text-sm font-black text-sky-700">가장 가까움</dt>
+          <dd className="mt-2 text-lg font-black text-black">
             {nearestFood?.name}
           </dd>
           <dd className="mt-1 text-sm text-slate-600">

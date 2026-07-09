@@ -34,7 +34,7 @@ function createFoodPhotoMarker(food: MapFood, rank: number): HTMLButtonElement {
   const marker = document.createElement("button");
   marker.type = "button";
   marker.className =
-    "animate-marker-pop group relative flex w-20 flex-col items-center rounded-2xl border-4 border-white bg-white p-1 text-left shadow-xl transition hover:-translate-y-1 hover:shadow-2xl";
+    "animate-marker-pop group relative flex w-20 flex-col items-center rounded-2xl border-4 border-[#fffdf7] bg-[#fffdf7] p-1 text-left shadow-xl transition hover:-translate-y-1 hover:shadow-2xl";
   marker.setAttribute(
     "aria-label",
     `${rank}위 추천 나눔 ${food.name} 지도 마커`,
@@ -42,7 +42,7 @@ function createFoodPhotoMarker(food: MapFood, rank: number): HTMLButtonElement {
 
   const rankLabel = document.createElement("span");
   rankLabel.className =
-    "absolute -top-3 -left-3 z-10 flex size-7 items-center justify-center rounded-full bg-emerald-700 text-xs font-black text-white shadow";
+    "absolute -top-3 -left-3 z-10 flex size-7 items-center justify-center rounded-full bg-[#06452f] text-xs font-black text-white shadow";
   rankLabel.textContent = String(rank);
 
   const image = document.createElement("img");
@@ -64,7 +64,7 @@ function createFoodPhotoMarker(food: MapFood, rank: number): HTMLButtonElement {
 function createFoodDetailOverlay(food: MapFood, rank: number): HTMLDivElement {
   const content = document.createElement("div");
   content.className =
-    "animate-marker-pop w-56 overflow-hidden rounded-2xl border border-emerald-900/10 bg-white text-slate-900 shadow-2xl";
+    "animate-marker-pop w-56 overflow-hidden rounded-2xl border-2 border-[#d9c9ae] bg-[#fffdf7] text-slate-900 shadow-2xl";
 
   const image = document.createElement("img");
   image.alt = `${food.name} 사진`;
@@ -215,10 +215,10 @@ export function KakaoFoodMap({
   }, [foods, receiver, sdkReady]);
 
   return (
-    <section className="animate-fade-up-delay-2 overflow-hidden rounded-[2rem] border border-emerald-950/10 bg-emerald-950 p-5 text-white shadow-2xl shadow-emerald-950/15 md:p-7">
+    <section className="brand-panel-dark animate-fade-up-delay-2 overflow-hidden p-5 md:p-7">
       <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-end">
         <div>
-          <p className="text-xs font-bold tracking-[0.14em] text-emerald-300 uppercase">
+          <p className="text-xs font-black tracking-[0.14em] text-emerald-200 uppercase">
             Kakao Maps
           </p>
           <h2 className="mt-2 text-2xl font-black">픽업 위치 지도</h2>
@@ -240,7 +240,7 @@ export function KakaoFoodMap({
           />
           <div
             aria-label="보호자와 등록 나눔의 카카오 지도"
-            className="relative mt-6 h-[26rem] overflow-hidden rounded-2xl bg-emerald-900/50"
+            className="relative mt-6 h-[26rem] overflow-hidden rounded-[1.5rem] border-2 border-[#d9c9ae] bg-emerald-900/50"
             ref={mapContainerRef}
             role="application"
           >
@@ -258,7 +258,7 @@ export function KakaoFoodMap({
           </div>
         </>
       ) : (
-        <div className="mt-6 rounded-2xl border border-amber-300/30 bg-amber-100/10 px-6 py-12 text-center text-sm font-bold text-amber-100">
+        <div className="mt-6 rounded-2xl border-2 border-amber-300/30 bg-amber-100/10 px-6 py-12 text-center text-sm font-bold text-amber-100">
           NEXT_PUBLIC_KAKAO_MAP_JAVASCRIPT_KEY 환경변수를 설정해 주세요.
         </div>
       )}

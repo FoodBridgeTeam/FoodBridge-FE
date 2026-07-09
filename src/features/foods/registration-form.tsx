@@ -40,7 +40,7 @@ function Field({ children, error, label, name }: FieldProps) {
   return (
     <div>
       <label
-        className="mb-2 block text-sm font-bold text-emerald-950"
+        className="mb-2 block text-sm font-black text-[var(--accent-dark)]"
         htmlFor={name}
       >
         {label}
@@ -58,7 +58,7 @@ function SubmitButton() {
 
   return (
     <button
-      className="w-full rounded-2xl bg-emerald-700 px-6 py-4 text-base font-black text-white shadow-lg shadow-emerald-900/20 transition hover:-translate-y-0.5 hover:bg-emerald-800 disabled:cursor-not-allowed disabled:bg-emerald-700/50"
+      className="brand-button-dark w-full disabled:cursor-not-allowed disabled:opacity-60"
       disabled={pending}
       type="submit"
     >
@@ -68,7 +68,7 @@ function SubmitButton() {
 }
 
 const inputClassName =
-  "w-full rounded-2xl border border-emerald-950/15 bg-white/95 px-4 py-3 text-base text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-emerald-600 focus:ring-4 focus:ring-emerald-100";
+  "brand-input";
 
 const INITIAL_FOOD_REGISTRATION_STATE: FoodRegistrationState = {
   status: "idle",
@@ -243,23 +243,23 @@ export function FoodRegistrationForm() {
 
   if (state.status === "success") {
     return (
-      <section className="animate-fade-up rounded-[2rem] border border-emerald-200 bg-white p-8 text-center shadow-xl shadow-emerald-950/10">
+      <section className="brand-card animate-fade-up p-8 text-center">
         <div className="mx-auto flex size-16 items-center justify-center rounded-full bg-emerald-100 text-3xl">
           🐾
         </div>
-        <h2 className="mt-5 text-3xl font-black text-emerald-950">
+        <h2 className="mt-5 text-3xl font-black text-[var(--accent-dark)]">
           나눔 등록 완료!
         </h2>
         <p className="mt-3 text-slate-600">{state.message}</p>
         <div className="mt-8 flex flex-wrap justify-center gap-3">
           <Link
-            className="rounded-full bg-emerald-700 px-5 py-3 text-sm font-black text-white shadow-lg shadow-emerald-900/15"
+            className="brand-button"
             href="/foods"
           >
             추천 목록 보기
           </Link>
           <Link
-            className="rounded-full bg-emerald-50 px-5 py-3 text-sm font-black text-emerald-800"
+            className="brand-button-soft"
             href="/foods/new"
           >
             다른 나눔 등록
@@ -271,14 +271,14 @@ export function FoodRegistrationForm() {
 
   return (
     <form action={formAction} className="space-y-8">
-      <section className="animate-fade-up rounded-[2rem] border border-emerald-200 bg-gradient-to-br from-emerald-50 via-white to-orange-50 p-6 shadow-sm md:p-8">
-        <p className="text-sm font-black tracking-[0.2em] text-emerald-700 uppercase">
+      <section className="brand-card animate-fade-up p-6 md:p-8">
+        <p className="brand-kicker">
           Step 1 · AI registration helper
         </p>
-        <h2 className="mt-2 text-3xl font-black text-emerald-950">
+        <h2 className="mt-3 text-3xl font-black text-black">
           사진으로 먼저 등록하기
         </h2>
-        <p className="mt-3 text-slate-600">
+        <p className="mt-3 font-bold leading-7 text-slate-600">
           제품 사진을 올리면 AI가 이름, 브랜드, 수량, 대상 동물, 성분,
           유통기한 후보를 자동으로 채웁니다.
         </p>
@@ -295,7 +295,7 @@ export function FoodRegistrationForm() {
               type="file"
             />
             {previewUrl ? (
-              <div className="relative mt-4 h-72 overflow-hidden rounded-[1.5rem] border border-dashed border-emerald-900/20 bg-white">
+              <div className="relative mt-4 h-72 overflow-hidden rounded-[1.5rem] border-2 border-dashed border-[var(--line)] bg-white">
                 <Image
                   alt="선택한 제품 사진 미리보기"
                   className="object-cover"
@@ -320,7 +320,7 @@ export function FoodRegistrationForm() {
               type="file"
             />
             {ingredientPreviewUrl ? (
-              <div className="relative mt-4 h-44 overflow-hidden rounded-[1.5rem] border border-dashed border-orange-900/20 bg-white">
+              <div className="relative mt-4 h-44 overflow-hidden rounded-[1.5rem] border-2 border-dashed border-[var(--line)] bg-white">
                 <Image
                   alt="선택한 성분표 사진 미리보기"
                   className="object-cover"
@@ -332,17 +332,17 @@ export function FoodRegistrationForm() {
           </Field>
         </div>
 
-        <div className="mt-6 rounded-3xl bg-white p-5 shadow-sm">
+        <div className="brand-card-flat mt-6 p-5">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h3 className="font-black text-emerald-950">AI 사진 분석</h3>
-              <p className="mt-1 text-sm leading-6 text-slate-600">
+              <h3 className="font-black text-[var(--accent-dark)]">AI 사진 분석</h3>
+              <p className="mt-1 text-sm font-bold leading-6 text-slate-600">
                 Gemini가 사진을 보고 등록값을 제안합니다. 안전을 위해 최종
                 등록 전 보호자가 직접 확인해 주세요.
               </p>
             </div>
             <button
-              className="rounded-2xl bg-orange-500 px-6 py-3 text-sm font-black text-white shadow-lg shadow-orange-500/20 transition hover:-translate-y-0.5 hover:bg-orange-600 disabled:cursor-wait disabled:opacity-60"
+              className="brand-button-dark disabled:cursor-wait disabled:opacity-60"
               disabled={analysis.status === "loading"}
               onClick={handleAnalyzeImage}
               type="button"
@@ -365,11 +365,11 @@ export function FoodRegistrationForm() {
         </div>
       </section>
 
-      <section className="animate-fade-up-delay-1 rounded-[2rem] bg-white p-6 shadow-xl shadow-emerald-950/10 md:p-8">
-        <p className="text-sm font-black tracking-[0.2em] text-emerald-700 uppercase">
+      <section className="brand-card animate-fade-up-delay-1 p-6 md:p-8">
+        <p className="brand-kicker">
           Step 2 · Review and submit
         </p>
-        <h2 className="mt-2 text-3xl font-black text-emerald-950">
+        <h2 className="mt-3 text-3xl font-black text-black">
           입력값 확인하기
         </h2>
 
@@ -498,7 +498,7 @@ export function FoodRegistrationForm() {
             />
           </Field>
 
-          <label className="flex items-center gap-3 rounded-2xl bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-950">
+          <label className="brand-card-flat flex items-center gap-3 px-4 py-3 text-sm font-black text-[var(--accent-dark)]">
             <input name="opened" type="hidden" value="false" />
             <input
               checked={opened}
@@ -562,16 +562,16 @@ export function FoodRegistrationForm() {
         </div>
       </section>
 
-      <section className="animate-fade-up-delay-2 rounded-[2rem] bg-white p-6 shadow-xl shadow-emerald-950/10 md:p-8">
-        <p className="text-sm font-black tracking-[0.2em] text-emerald-700 uppercase">
+      <section className="brand-card animate-fade-up-delay-2 p-6 md:p-8">
+        <p className="brand-kicker">
           Step 3 · Pickup location
         </p>
-        <h2 className="mt-2 text-3xl font-black text-emerald-950">
+        <h2 className="mt-3 text-3xl font-black text-black">
           픽업 위치 등록
         </h2>
 
         <div className="mt-6 grid gap-5 md:grid-cols-2">
-          <label className="text-sm font-bold text-emerald-950 md:col-span-2">
+          <label className="text-sm font-black text-[var(--accent-dark)] md:col-span-2">
             시연용 위치
             <select
               className={`${inputClassName} mt-2`}
@@ -628,7 +628,7 @@ export function FoodRegistrationForm() {
           </Field>
 
           <button
-            className="rounded-2xl border border-emerald-700 bg-white px-5 py-3 text-sm font-bold text-emerald-800 transition hover:-translate-y-0.5 hover:bg-emerald-100 disabled:cursor-wait disabled:opacity-60 md:col-span-2"
+            className="brand-button-soft disabled:cursor-wait disabled:opacity-60 md:col-span-2"
             disabled={location.requestState === "loading"}
             onClick={handleUseCurrentLocation}
             type="button"
