@@ -127,6 +127,7 @@ export function FoodRegistrationForm() {
   const [category, setCategory] = useState("");
   const location = useLocationSelection(PUKYONG_DAEYEON_COORDINATES);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
+  const [manualBarcode, setManualBarcode] = useState("");
 
   function handleBarcodeScanSuccess(decodedText: string) {
     setIsScannerOpen(false);
@@ -167,6 +168,20 @@ export function FoodRegistrationForm() {
         result: null,
       });
     }
+  }
+
+  function handleManualBarcodeSubmit() {
+    const trimmedBarcode = manualBarcode.trim();
+    if (!trimmedBarcode) {
+      setAnalysis({
+        status: "error",
+        message: "바코드 번호를 입력한 뒤 적용해 주세요.",
+        result: null,
+      });
+      return;
+    }
+
+    handleBarcodeScanSuccess(trimmedBarcode);
   }
 
   useEffect(() => {
@@ -385,7 +400,8 @@ export function FoodRegistrationForm() {
               </p>
               <p className="mt-1 text-xs leading-5 text-slate-600">
                 편의점 신선 식품(도시락, 삼각김밥 등)의 2D 바코드를 찍어 즉시
-                유통기한을 연동합니다.
+                유통기한을 연동합니다. 가까이 대기보다 15~25cm 떨어뜨려
+                초점을 맞추는 편이 안정적입니다.
               </p>
               <button
                 className="mt-3 w-full rounded-xl bg-emerald-700 py-2.5 text-xs font-black text-white shadow-md shadow-emerald-900/15 transition hover:-translate-y-0.5 hover:bg-emerald-800"
@@ -394,6 +410,32 @@ export function FoodRegistrationForm() {
               >
                 🎥 바코드 스캐너 열기
               </button>
+              <div className="mt-3 rounded-xl border border-slate-200 bg-white/85 p-3">
+                <label
+                  className="text-xs font-black text-slate-600"
+                  htmlFor="manualBarcode"
+                >
+                  카메라 실패 시 바코드 직접 입력
+                </label>
+                <div className="mt-2 flex gap-2">
+                  <input
+                    className="min-w-0 flex-1 rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100"
+                    id="manualBarcode"
+                    inputMode="numeric"
+                    onChange={(event) => setManualBarcode(event.target.value)}
+                    placeholder="예: 010880100707742117260712"
+                    type="text"
+                    value={manualBarcode}
+                  />
+                  <button
+                    className="shrink-0 rounded-lg bg-slate-900 px-3 py-2 text-xs font-black text-white transition hover:bg-slate-700"
+                    onClick={handleManualBarcodeSubmit}
+                    type="button"
+                  >
+                    적용
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
 

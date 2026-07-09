@@ -58,8 +58,21 @@ export function BarcodeScanner({
         await html5Qrcode.start(
           { facingMode: "environment" },
           {
-            fps: 10,
-            qrbox: { width: 250, height: 120 },
+            fps: 12,
+            qrbox: (viewfinderWidth, viewfinderHeight) => ({
+              width: Math.floor(viewfinderWidth * 0.82),
+              height: Math.min(180, Math.floor(viewfinderHeight * 0.36)),
+            }),
+            videoConstraints: {
+              facingMode: "environment",
+              width: { ideal: 1920 },
+              height: { ideal: 1080 },
+              advanced: [
+                {
+                  focusMode: "continuous",
+                } as MediaTrackConstraintSet,
+              ],
+            },
           },
           (decodedText) => {
             onScanSuccess(decodedText);
@@ -110,8 +123,9 @@ export function BarcodeScanner({
 
         <main className="my-5">
           <p className="mb-4 text-sm leading-relaxed text-slate-500">
-            삼각김밥, 도시락 등의 **2D 바코드**를 화면 가운데 가이드 상자 안에
-            맞춰 비추어 주세요.
+            삼각김밥, 도시락 등의 2D 바코드를 화면 가운데 가이드 상자 안에
+            맞춰 주세요. 너무 가까우면 초점이 흐려지므로 15~25cm 정도
+            떨어뜨린 뒤 천천히 맞추는 편이 안정적입니다.
           </p>
 
           <div className="relative aspect-[4/3] overflow-hidden rounded-2xl border border-emerald-950/10 bg-black">
@@ -119,7 +133,11 @@ export function BarcodeScanner({
 
             {hasCameraPermission && !errorMsg ? (
               <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-                <div className="animate-pulse-glow h-[120px] w-[80%] rounded-xl border-4 border-dashed border-orange-500 bg-orange-500/5" />
+                <div className="flex h-[150px] w-[84%] animate-pulse-glow items-center justify-center rounded-xl border-4 border-dashed border-orange-500 bg-orange-500/5">
+                  <span className="rounded-full bg-black/55 px-3 py-1 text-xs font-black text-white">
+                    15~25cm 거리 유지
+                  </span>
+                </div>
               </div>
             ) : null}
 
@@ -142,6 +160,9 @@ export function BarcodeScanner({
         </main>
 
         <footer className="flex justify-end gap-2 border-t border-slate-100 pt-4">
+          <p className="mr-auto max-w-52 text-xs leading-5 text-slate-500">
+            실패하면 뒤로 물러나거나, 등록 화면의 바코드 직접 입력을 사용하세요.
+          </p>
           <button
             className="rounded-xl border border-emerald-900/15 bg-white px-5 py-2.5 text-sm font-bold text-emerald-900 transition hover:bg-emerald-50"
             onClick={onClose}
