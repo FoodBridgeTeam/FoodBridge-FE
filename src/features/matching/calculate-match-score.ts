@@ -8,11 +8,15 @@ export type Coordinates = {
 export type ReceiverProfile = Coordinates & {
   age: number | null;
   allergies: string[];
+  cautionIngredients: string[];
   conditionNote: string | null;
   isPrescriptionDiet: boolean;
   name: string;
   petId: string;
   species: "dog" | "cat";
+  symptomSummary: string | null;
+  symptomTags: string[];
+  toleratedIngredients: string[];
   weight: number | null;
 };
 
@@ -49,12 +53,13 @@ const DISTANCE_WEIGHT = 0.3;
 const URGENCY_WEIGHT = 0.3;
 const EARTH_RADIUS_KM = 6371;
 const MAX_RECOMMENDED_DISTANCE_KM = 10;
+const MINIMUM_FOOD_EXPIRY_DAYS = 14;
 
 const FOOD_CATEGORIES = new Set(["dry_food", "wet_food", "treat", "prescription"]);
 
 const ALLERGY_SYNONYMS: Record<string, string[]> = {
-  chicken: ["chicken", "닭", "닭고기", "치킨"],
-  beef: ["beef", "소", "소고기"],
+  chicken: ["chicken", "닭", "닭고기", "치킨", "계육"],
+  beef: ["beef", "소", "소고기", "쇠고기"],
   pork: ["pork", "돼지", "돼지고기"],
   duck: ["duck", "오리"],
   fish: ["fish", "생선", "어류"],
@@ -101,25 +106,37 @@ function getDistanceScore(distanceKm: number): number {
   return Math.max(0, 100 - (distanceKm / MAX_RECOMMENDED_DISTANCE_KM) * 100);
 }
 
+function getDaysLeftUntilExpiry(expiryDate: string, now: Date): number {
+  const today = new Date(now);
+  today.setHours(0, 0, 0, 0);
+  const expiry = new Date(expiryDate);
+  expiry.setHours(0, 0, 0, 0);
+
+  return Math.ceil(
+    (expiry.getTime() - today.getTime()) / (24 * 60 * 60 * 1000),
+  );
+}
+
+function isBelowMinimumFoodExpiry(item: MatchableItem, now: Date): boolean {
+  if (!item.expiry_date || !FOOD_CATEGORIES.has(item.category)) {
+    return false;
+  }
+
+  return getDaysLeftUntilExpiry(item.expiry_date, now) < MINIMUM_FOOD_EXPIRY_DAYS;
+}
+
 function getUrgencyScore(item: MatchableItem, now: Date): number {
   if (!item.expiry_date || !FOOD_CATEGORIES.has(item.category)) {
     return 0;
   }
 
-  const today = new Date(now);
-  today.setHours(0, 0, 0, 0);
-  const expiry = new Date(item.expiry_date);
-  expiry.setHours(0, 0, 0, 0);
-  const daysLeft = Math.ceil(
-    (expiry.getTime() - today.getTime()) / (24 * 60 * 60 * 1000),
-  );
+  const daysLeft = getDaysLeftUntilExpiry(item.expiry_date, now);
 
   if (daysLeft < 0) return 0;
-  if (daysLeft <= 1) return 100;
-  if (daysLeft <= 3) return 85;
-  if (daysLeft <= 7) return 65;
-  if (daysLeft <= 14) return 40;
-  if (daysLeft <= 30) return 20;
+  if (daysLeft < MINIMUM_FOOD_EXPIRY_DAYS) return 0;
+  if (daysLeft <= 21) return 100;
+  if (daysLeft <= 30) return 70;
+  if (daysLeft <= 60) return 35;
   return 10;
 }
 
@@ -145,6 +162,22 @@ function getAllergyConflict(
   for (const allergy of normalizedAllergies) {
     if (normalizedIngredients.some((ingredient) => ingredient.includes(allergy))) {
       return allergy;
+    }
+  }
+
+  return null;
+}
+
+function getIngredientOverlap(
+  candidateIngredients: string[],
+  ingredients: string[],
+): string | null {
+  const normalizedCandidates = new Set(candidateIngredients.map(normalizeToken));
+  const normalizedIngredients = ingredients.map(normalizeToken);
+
+  for (const candidate of normalizedCandidates) {
+    if (normalizedIngredients.some((ingredient) => ingredient.includes(candidate))) {
+      return candidate;
     }
   }
 
@@ -181,6 +214,12 @@ function calculateCompatibility(
     exclusionReasons.push("유통기한이 지난 물품입니다.");
   }
 
+  if (isBelowMinimumFoodExpiry(item, now)) {
+    exclusionReasons.push(
+      "수령·확인·급여 시간을 위해 유통기한이 14일 미만 남은 사료·간식은 추천하지 않습니다.",
+    );
+  }
+
   if (!FOOD_CATEGORIES.has(item.category)) {
     return {
       compatibility: "not_applicable",
@@ -205,6 +244,16 @@ function calculateCompatibility(
   const allergyConflict = getAllergyConflict(pet.allergies, item.ingredients);
   if (allergyConflict) {
     exclusionReasons.push(`알러지 성분(${allergyConflict})과 충돌합니다.`);
+  }
+
+  const screeningConflict = getAllergyConflict(
+    pet.cautionIngredients,
+    item.ingredients,
+  );
+  if (screeningConflict) {
+    exclusionReasons.push(
+      `증상 기록 기반 주의 후보 성분(${screeningConflict})과 충돌합니다.`,
+    );
   }
 
   if (item.category === "prescription" && !pet.isPrescriptionDiet) {
@@ -239,10 +288,16 @@ function calculateCompatibility(
     };
   }
 
+  const toleratedIngredient = getIngredientOverlap(
+    pet.toleratedIngredients,
+    item.ingredients,
+  );
+
   return {
     compatibility: "suitable",
-    compatibilityReason:
-      "등록된 원재료와 반려동물 프로필 기준으로 명확한 충돌이 발견되지 않았습니다.",
+    compatibilityReason: toleratedIngredient
+      ? `등록된 원재료와 반려동물 프로필 기준으로 명확한 충돌이 발견되지 않았습니다. 최근 문제 없이 급여된 후보 성분(${toleratedIngredient})이 포함되어 있습니다.`
+      : "등록된 원재료와 반려동물 프로필 기준으로 명확한 충돌이 발견되지 않았습니다.",
     compatibilityScore: 100,
     excluded: false,
     exclusionReasons,

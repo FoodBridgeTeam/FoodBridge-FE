@@ -162,6 +162,46 @@ a {
   box-shadow: 0 2px 0 rgb(6 69 47 / 0.14);
 }
 
+.brand-wordmark {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  border: 2px solid rgb(22 120 74 / 0.18);
+  border-radius: 999px;
+  background: #fffdf7;
+  padding: 0.58rem 0.95rem;
+  color: var(--accent-dark);
+  font-family:
+    "Arial Rounded MT Bold",
+    "Apple SD Gothic Neo",
+    Arial,
+    sans-serif;
+  font-size: clamp(1.05rem, 2.2vw, 1.28rem);
+  font-weight: 950;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  box-shadow: 0 2px 0 rgb(6 69 47 / 0.14);
+}
+
+.brand-wordmark::before {
+  display: grid;
+  width: 1.55rem;
+  height: 1.55rem;
+  place-items: center;
+  border-radius: 999px;
+  background: #d9ffe6;
+  color: var(--accent);
+  font-size: 0.9rem;
+  letter-spacing: 0;
+  content: "B";
+}
+
+.brand-breadcrumb {
+  color: var(--muted);
+  font-size: 0.86rem;
+  font-weight: 900;
+}
+
 .brand-card,
 .brand-card-flat {
   position: relative;
@@ -191,13 +231,13 @@ a {
 .brand-heading {
   color: #101010;
   font-family:
-    "Arial Black",
     "Apple SD Gothic Neo",
+    "Arial Rounded MT Bold",
     Arial,
     sans-serif;
   font-weight: 950;
-  letter-spacing: -0.075em;
-  line-height: 0.92;
+  letter-spacing: -0.06em;
+  line-height: 0.98;
 }
 
 .brand-kicker {

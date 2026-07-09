@@ -89,4 +89,29 @@ describe("parseItemImageAnalysis", () => {
       ),
     ).toThrow();
   });
+
+  it("adds clearly labeled front-package proteins to ingredients", () => {
+    expect(
+      parseItemImageAnalysis(
+        JSON.stringify({
+          category: "wet_food",
+          brand: "시저",
+          confidence: 0.72,
+          explanation:
+            "제품 전면에 시저 쇠고기와 닭고기라고 표시되어 있으나 상세 성분표는 흐립니다.",
+          expiryDateCandidate: null,
+          ingredients: [],
+          lifeStage: "unknown",
+          name: "시저 쇠고기와 닭고기",
+          opened: false,
+          openedAtCandidate: null,
+          remainingAmount: "1개",
+          targetSpecies: "dog",
+          warnings: ["성분표 확인 필요"],
+        }),
+      ),
+    ).toMatchObject({
+      ingredients: ["닭고기", "소고기"],
+    });
+  });
 });

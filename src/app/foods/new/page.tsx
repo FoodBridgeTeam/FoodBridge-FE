@@ -16,9 +16,13 @@ export default function NewFoodPage() {
           <Link className="brand-nav-button" href="/">
             ←
           </Link>
-          <div className="text-sm font-black text-slate-500 md:text-base">
-            BobEum <span className="mx-2 text-[var(--line)]">/</span>
-            <span className="text-black">등록</span>
+          <div className="flex items-end gap-3">
+            <Link className="brand-wordmark" href="/">
+              BobEum
+            </Link>
+            <span className="brand-breadcrumb pb-1">
+              / <span className="text-black">등록</span>
+            </span>
           </div>
         </div>
         <Link className="brand-button-soft" href="/foods">

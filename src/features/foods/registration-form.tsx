@@ -100,6 +100,17 @@ function toDatetimeLocalValue(isoDate: string | null | undefined) {
     .slice(0, 16);
 }
 
+function createMinimumExpiryDatetimeLocal() {
+  const date = new Date();
+  date.setDate(date.getDate() + 14);
+  date.setHours(0, 0, 0, 0);
+  const timezoneOffsetMs = date.getTimezoneOffset() * 60_000;
+
+  return new Date(date.getTime() - timezoneOffsetMs)
+    .toISOString()
+    .slice(0, 16);
+}
+
 function createPreviewUrl(file: File | null) {
   return file ? URL.createObjectURL(file) : null;
 }
@@ -133,6 +144,8 @@ export function FoodRegistrationForm() {
   const [lifeStage, setLifeStage] = useState("");
   const [storageNote, setStorageNote] = useState("");
   const location = useLocationSelection(BOBEUM_HOME_COORDINATES);
+  const requiresIngredientLabel = category !== "supply";
+  const minimumExpiryDate = createMinimumExpiryDatetimeLocal();
 
   const errors = state.fieldErrors;
 
@@ -163,9 +176,7 @@ export function FoodRegistrationForm() {
   }
 
   async function handleAnalyzeImage() {
-    const analysisTarget = selectedImage ?? selectedIngredientImage;
-
-    if (!analysisTarget) {
+    if (!selectedImage) {
       setAnalysis({
         status: "error",
         message: "먼저 분석할 제품 사진을 선택해 주세요.",
@@ -175,10 +186,14 @@ export function FoodRegistrationForm() {
     }
 
     const formData = new FormData();
-    formData.append("image", analysisTarget);
+    formData.append("image", selectedImage);
+    if (selectedIngredientImage) {
+      formData.append("ingredient_image", selectedIngredientImage);
+    }
     setAnalysis({
       status: "loading",
-      message: "Gemini가 제품명, 대상 동물, 성분표를 읽고 있어요...",
+      message:
+        "Gemini가 제품 사진과 성분표를 함께 읽고 있어요. 알러지 성분은 등록 전 꼭 확인해 주세요...",
       result: null,
     });
 
@@ -308,7 +323,11 @@ export function FoodRegistrationForm() {
 
           <Field
             error={firstError(errors, "ingredient_image")}
-            label="성분표 사진(선택)"
+            label={
+              requiresIngredientLabel
+                ? "성분표 사진(필수)"
+                : "성분표 사진(용품은 선택)"
+            }
             name="ingredient_image"
           >
             <input
@@ -317,8 +336,13 @@ export function FoodRegistrationForm() {
               id="ingredient_image"
               name="ingredient_image"
               onChange={handleIngredientImageChange}
+              required={requiresIngredientLabel}
               type="file"
             />
+            <p className="mt-2 text-sm font-bold leading-6 text-slate-500">
+              사료·간식·처방식은 알러지 궁합 판정을 위해 성분표 사진이
+              필요합니다. 장난감·배변패드 같은 용품은 생략할 수 있어요.
+            </p>
             {ingredientPreviewUrl ? (
               <div className="relative mt-4 h-44 overflow-hidden rounded-[1.5rem] border-2 border-dashed border-[var(--line)] bg-white">
                 <Image
@@ -416,7 +440,12 @@ export function FoodRegistrationForm() {
               className={inputClassName}
               id="category"
               name="category"
-              onChange={(event) => setCategory(event.target.value)}
+              onChange={(event) => {
+                setCategory(event.target.value);
+                if (event.target.value === "supply") {
+                  setIngredients("");
+                }
+              }}
               required
               value={category}
             >
@@ -475,11 +504,16 @@ export function FoodRegistrationForm() {
             <input
               className={inputClassName}
               id="expiry_date"
+              min={category === "supply" ? undefined : minimumExpiryDate}
               name="expiry_date"
               onChange={(event) => setExpiryDate(event.target.value)}
               type="datetime-local"
               value={expiryDate}
             />
+            <p className="mt-2 text-xs font-bold text-slate-500">
+              사료·간식·처방식은 수령·확인·급여 시간을 고려해 유통기한이
+              최소 14일 이상 남은 물품만 등록할 수 있어요.
+            </p>
           </Field>
 
           <Field
@@ -513,7 +547,11 @@ export function FoodRegistrationForm() {
 
           <Field
             error={firstError(errors, "ingredients")}
-            label="원재료/주의 성분"
+            label={
+              requiresIngredientLabel
+                ? "원재료/주의 성분"
+                : "원재료/주의 성분(용품은 선택)"
+            }
             name="ingredients"
           >
             <textarea

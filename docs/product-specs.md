@@ -30,7 +30,7 @@ MVP 목표:
 3. 범용 중고거래 플랫폼은 반려동물 프로필 기반 적합성 판단을 제공하지 않는다.
 4. 수령자가 성분표를 직접 해석해야 하므로 신뢰가 낮다.
 5. 알러지·나이·체급·처방식 여부가 맞지 않으면 잘못 급여할 위험이 있다.
-6. 유통기한 임박 사료가 우선적으로 연결되지 않아 폐기될 수 있다.
+6. 등록 가능한 안전 기간 안의 사료가 필요한 보호자에게 제때 연결되지 않아 폐기될 수 있다.
 
 ## 3. Product Positioning
 
@@ -89,7 +89,7 @@ Needs:
 - 가까운 물품 찾기
 - 우리 반려동물이 먹어도 되는지 확인
 - 알러지 충돌 피하기
-- 유통기한 임박 물품 우선 확인
+- 14일 안전 버퍼를 통과한 물품 중 폐기 방지 우선 확인
 - 수령 신청 및 픽업 위치 확인
 
 ### 4.3 반려동물 프로필
@@ -114,22 +114,25 @@ Fields:
 3. 성분표 사진을 업로드한다.
 4. AI가 제품명, 브랜드, 카테고리, 대상 동물, 잔여량, 개봉 상태, 유통기한 후보를 추정한다.
 5. 나눔자가 AI 결과를 확인하고 수정한다.
-6. 위치를 GPS 또는 수동 좌표로 입력한다.
-7. 물품을 등록한다.
-8. 등록된 물품은 `available` 상태가 된다.
+6. 사료·간식·처방식은 유통기한이 최소 14일 이상 남았는지 검증한다.
+7. 위치를 GPS 또는 수동 좌표로 입력한다.
+8. 물품을 등록한다.
+9. 등록된 물품은 `available` 상태가 된다.
 
 ### 5.2 수혜자 추천 Flow
 
 1. 수혜자가 반려동물 프로필을 등록한다.
 2. 현재 위치를 GPS 또는 수동 좌표로 입력한다.
-3. 시스템이 `available` 물품을 조회한다.
-4. AI 또는 저장된 성분 분석 결과를 바탕으로 반려동물과 물품의 궁합을 판정한다.
-5. `unsuitable` 물품은 제외한다.
-6. 거리, 유통기한 긴급도, AI 궁합 점수로 추천 점수를 계산한다.
-7. 추천 목록과 지도 마커를 표시한다.
-8. 수혜자가 수령 신청을 한다.
-9. 물품 상태가 `reserved`로 변경된다.
-10. 예약된 물품은 다른 추천 목록에서 제외된다.
+3. 선택적으로 증상 사진을 업로드해 AI가 관찰 가능한 증상 태그, 회피 후보, 잘 맞았던 후보를 기록한다.
+4. 보호자가 회피 후보를 확인하고 추천 조건에 반영할지 선택한다.
+5. 시스템이 `available` 물품을 조회한다.
+6. AI 또는 저장된 성분 분석 결과를 바탕으로 반려동물과 물품의 궁합을 판정한다.
+7. `unsuitable` 물품은 제외한다.
+8. 거리, 나눔 우선도, AI 궁합 점수로 추천 점수를 계산한다.
+9. 추천 목록과 지도 마커를 표시한다.
+10. 수혜자가 수령 신청을 한다.
+11. 물품 상태가 `reserved`로 변경된다.
+12. 예약된 물품은 다른 추천 목록에서 제외된다.
 
 ## 6. Pages
 
@@ -217,7 +220,7 @@ Top alert cards:
 
 - 우리 아이가 먹을 수 있는 물품 수
 - 가장 가까운 물품
-- 유통기한이 가장 긴급한 물품
+- 폐기 방지 우선도가 높은 물품
 - 추천 1순위 물품
 
 ### 6.5 Map
@@ -260,6 +263,12 @@ Output:
 
 The user must be able to review and edit AI-filled fields before saving.
 
+Ingredient label policy:
+
+- `dry_food`, `wet_food`, `treat`, `prescription`, and uncertain edible items require an ingredient label image before registration.
+- `supply` items such as toys, pads, carriers, and bowls may omit the ingredient label image.
+- Product photo and ingredient label photo should be analyzed together when both are supplied.
+
 ### 7.2 Ingredient Compatibility Analysis
 
 Input:
@@ -289,6 +298,8 @@ Rules:
 - Prescription diet should show “수의사 상담 권장”.
 - Unknown or uncertain ingredients should not be hidden.
 - AI must not guarantee safety.
+- Recommendation cards must show the ingredient label image when available, the AI-extracted ingredient/warning list, and a clear notice that AI analysis is advisory.
+- The receiver must explicitly confirm that they reviewed the ingredient label, allergy information, and pet health context before submitting a pickup request.
 
 ### 7.3 Alternative Feed Recommendation Mock
 
@@ -312,7 +323,7 @@ Summary:
 
 - AI 궁합: 40%
 - 거리: 30%
-- 유통기한 긴급도: 30%
+- 나눔 우선도: 30%
 
 Hard exclusions:
 
@@ -346,6 +357,9 @@ Required notices:
 - “알러지나 질환이 있는 반려동물은 수의사 상담을 권장합니다.”
 - “처방식은 수의사 상담 후 급여하세요.”
 - “유통기한이 지났거나 보관 상태가 불확실한 사료는 나눔 대상에서 제외됩니다.”
+- “사료·간식·처방식은 수령, 성분 확인, 적응 급여 시간을 고려해 유통기한이 14일 이상 남은 물품만 등록할 수 있습니다.”
+- “증상 사진 기록은 수의학적 진단이 아니며, 관찰 가능한 징후와 보호자 입력 성분을 정리하는 보조 기능입니다.”
+- “증상이 지속되거나 악화되면 수의사 상담을 권장합니다.”
 
 Product policy:
 

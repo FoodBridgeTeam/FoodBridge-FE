@@ -156,6 +156,7 @@ export async function reserveFood(
   formData: FormData,
 ): Promise<FoodReservationState> {
   const itemId = formData.get("foodId");
+  const safetyConfirmed = formData.get("safetyConfirmed");
   const petId = formData.get("petId");
   const matchScore = Number(formData.get("matchScore") ?? 0);
   const compatibility = formData.get("compatibility");
@@ -168,6 +169,15 @@ export async function reserveFood(
     return {
       status: "error",
       message: "수령 신청할 물품을 찾지 못했습니다.",
+    };
+  }
+
+  if (safetyConfirmed !== "true") {
+    return {
+      foodId: itemId,
+      status: "error",
+      message:
+        "성분표와 반려동물 알러지 정보를 보호자가 직접 확인한 뒤 신청해 주세요.",
     };
   }
 

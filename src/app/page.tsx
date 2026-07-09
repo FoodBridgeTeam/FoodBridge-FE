@@ -1,7 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
 
-import { BellIcon } from "@/components/icons";
 import { createClient } from "@/lib/supabase/server";
 import type { Tables } from "@/types/database";
 
@@ -94,16 +93,17 @@ async function getFeaturedItem(): Promise<FeaturedItem | null> {
 function TopNav() {
   return (
     <nav className="brand-nav animate-fade-up">
-      <div className="text-sm font-black text-slate-500 md:text-base">
-        BobEum <span className="mx-2 text-[var(--line)]">/</span>
-        <span className="text-black">개요</span>
+      <div className="flex items-end gap-3">
+        <Link className="brand-wordmark" href="/">
+          BobEum
+        </Link>
+        <span className="brand-breadcrumb pb-1">
+          / <span className="text-black">개요</span>
+        </span>
       </div>
       <div className="flex items-center gap-3">
-        <Link className="brand-nav-button relative" href="/foods">
-          <BellIcon className="size-5" />
-          <span className="absolute -right-1 -top-1 grid size-6 place-items-center rounded-full bg-[var(--accent)] text-xs text-white">
-            3
-          </span>
+        <Link className="brand-button-soft" href="/foods">
+          추천 보기
         </Link>
         <Link className="brand-button-soft" href="/foods/new">
           + 나눔 등록
@@ -215,9 +215,10 @@ export default async function Home() {
         <div>
           <p className="brand-kicker animate-fade-up">반려동물 나눔 대시보드</p>
           <h1 className="brand-heading animate-fade-up-delay-1 mt-5 text-5xl md:text-7xl">
-            BOBEUM
-            <br />
-            개요
+            밥이음
+            <span className="mt-3 block text-3xl text-[var(--accent)] md:text-5xl">
+              반려동물 나눔을 잇다
+            </span>
           </h1>
           <p className="animate-fade-up-delay-2 mt-6 max-w-2xl text-xl font-bold leading-9 text-slate-600">
             안 맞아서 남은 반려동물 사료·간식·용품을 AI 성분 분석과 궁합

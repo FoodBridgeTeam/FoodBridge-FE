@@ -289,7 +289,7 @@ for each row execute function public.set_updated_at();
 | compatibility_score | 0-100 score |
 | compatibility_reason | Human-readable reason |
 | distance_km | Haversine distance |
-| urgency_score | Expiry urgency score |
+| urgency_score | Donation priority score based on expiry |
 | status | pending/accepted/completed/cancelled |
 
 ## 7. Storage Buckets

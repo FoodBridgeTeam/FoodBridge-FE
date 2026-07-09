@@ -69,9 +69,13 @@ export default async function FoodsPage({ searchParams }: FoodsPageProps) {
           <Link className="brand-nav-button" href="/">
             ←
           </Link>
-          <div className="text-sm font-black text-slate-500 md:text-base">
-            BobEum <span className="mx-2 text-[var(--line)]">/</span>
-            <span className="text-black">매칭</span>
+          <div className="flex items-end gap-3">
+            <Link className="brand-wordmark" href="/">
+              BobEum
+            </Link>
+            <span className="brand-breadcrumb pb-1">
+              / <span className="text-black">매칭</span>
+            </span>
           </div>
         </div>
         <Link className="brand-button" href="/foods/new">
@@ -88,7 +92,7 @@ export default async function FoodsPage({ searchParams }: FoodsPageProps) {
         </h1>
         <p className="mt-5 max-w-3xl text-lg font-bold leading-8 text-slate-600">
           10km 이내 사료·간식·용품을 대상으로 반려동물 종, 알러지, 처방식
-          여부를 먼저 걸러낸 뒤 궁합 40%, 거리 30%, 유통기한 긴급도 30%로
+          여부를 먼저 걸러낸 뒤 궁합 40%, 거리 30%, 나눔 우선도 30%로
           추천합니다.
         </p>
       </header>

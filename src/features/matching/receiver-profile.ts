@@ -59,10 +59,12 @@ export function parseReceiverProfile(
   const petName = firstValue(searchParams.pet_name).trim();
   const petId = firstValue(searchParams.pet_id).trim();
   const conditionNote = firstValue(searchParams.condition_note).trim();
+  const symptomSummary = firstValue(searchParams.symptom_summary).trim();
 
   return {
     age: numberOrNull(searchParams.age),
     allergies: allergyList(searchParams.allergies),
+    cautionIngredients: allergyList(searchParams.caution_ingredients),
     conditionNote: conditionNote || null,
     isPrescriptionDiet: booleanOrDefault(
       searchParams.is_prescription_diet,
@@ -83,6 +85,9 @@ export function parseReceiverProfile(
     name: petName || "콩이",
     petId: petId || "demo-kongi",
     species: species === "cat" ? "cat" : "dog",
+    symptomSummary: symptomSummary || null,
+    symptomTags: allergyList(searchParams.symptom_tags),
+    toleratedIngredients: allergyList(searchParams.tolerated_ingredients),
     weight: numberOrNull(searchParams.weight),
   };
 }

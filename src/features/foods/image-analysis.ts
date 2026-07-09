@@ -44,10 +44,71 @@ export const itemImageAnalysisSchema = z.object({
 
 export type ItemImageAnalysis = z.infer<typeof itemImageAnalysisSchema>;
 
+const EDIBLE_ITEM_CATEGORIES = new Set([
+  "dry_food",
+  "wet_food",
+  "treat",
+  "prescription",
+  "unknown",
+]);
+
+const EXPLICIT_INGREDIENT_CLAIMS = [
+  {
+    canonical: "닭고기",
+    patterns: [/닭\s*고기/i, /치킨/i, /chicken/i, /계육/i],
+  },
+  {
+    canonical: "소고기",
+    patterns: [/소\s*고기/i, /쇠\s*고기/i, /beef/i],
+  },
+  {
+    canonical: "돼지고기",
+    patterns: [/돼지\s*고기/i, /pork/i],
+  },
+  {
+    canonical: "오리고기",
+    patterns: [/오리\s*고기/i, /duck/i],
+  },
+  {
+    canonical: "연어",
+    patterns: [/연어/i, /salmon/i],
+  },
+  {
+    canonical: "참치",
+    patterns: [/참치/i, /tuna/i],
+  },
+  {
+    canonical: "생선",
+    patterns: [/생선/i, /fish/i],
+  },
+  {
+    canonical: "계란",
+    patterns: [/계란/i, /달걀/i, /egg/i],
+  },
+  {
+    canonical: "우유",
+    patterns: [/우유/i, /유제품/i, /milk/i, /dairy/i],
+  },
+  {
+    canonical: "밀",
+    patterns: [/밀\b/i, /wheat/i],
+  },
+  {
+    canonical: "옥수수",
+    patterns: [/옥수수/i, /corn/i],
+  },
+  {
+    canonical: "대두",
+    patterns: [/대두/i, /콩\b/i, /soy/i],
+  },
+];
+
 export const ITEM_IMAGE_ANALYSIS_PROMPT = `
 You are an assistant for a Korean pet food and pet supply donation MVP named BobEum.
 
 Analyze the supplied pet food, treat, prescription diet, or pet supply image.
+The request may include both a product photo and an ingredient-label photo.
+If an ingredient-label photo is supplied, use it as the primary source for ingredients.
 If an ingredient label is visible, extract ingredients. If ingredients are not visible, return an empty array.
 
 Return only valid JSON with this exact shape:
@@ -72,6 +133,8 @@ Rules:
 - This is donation-only. Do not mention price, sale, purchase, or checkout.
 - Extract expiryDateCandidate ONLY if the exact expiration date text is clearly visible and readable.
 - Never guess expiration dates, opened dates, ingredients, or medical suitability.
+- For dry_food, wet_food, treat, prescription, and unknown edible-looking items, ingredient-label evidence is important. If no readable ingredient label is available, keep ingredients as [] and add "성분표 확인 필요" to warnings.
+- However, if the product front label clearly names a protein or flavor ingredient such as "쇠고기", "소고기", "닭고기", "연어", "참치", or "오리", include that explicit label claim in ingredients even if the detailed ingredient label is unreadable.
 - If the package says prescription diet, category must be "prescription" and warnings must include "처방식은 수의사 상담 권장".
 - If the item is a bowl, pad, toy, carrier, or other non-food product, category should be "supply", ingredients should be [].
 - If ingredients are blurry, hidden, or incomplete, keep ingredients as [] and add a warning.
@@ -92,5 +155,53 @@ export function extractJsonObject(text: string): unknown {
 }
 
 export function parseItemImageAnalysis(text: string): ItemImageAnalysis {
-  return itemImageAnalysisSchema.parse(extractJsonObject(text));
+  return enrichExplicitIngredientClaims(
+    itemImageAnalysisSchema.parse(extractJsonObject(text)),
+  );
+}
+
+function enrichExplicitIngredientClaims(
+  analysis: ItemImageAnalysis,
+): ItemImageAnalysis {
+  if (!EDIBLE_ITEM_CATEGORIES.has(analysis.category)) {
+    return analysis;
+  }
+
+  const evidenceText = [
+    analysis.name,
+    analysis.explanation,
+    ...analysis.warnings,
+  ]
+    .filter((value): value is string => Boolean(value))
+    .join(" ");
+  const ingredients = new Set(analysis.ingredients);
+  let addedIngredient = false;
+
+  for (const claim of EXPLICIT_INGREDIENT_CLAIMS) {
+    if (claim.patterns.some((pattern) => pattern.test(evidenceText))) {
+      if (!ingredients.has(claim.canonical)) {
+        ingredients.add(claim.canonical);
+        addedIngredient = true;
+      }
+    }
+  }
+
+  if (!addedIngredient) {
+    return analysis;
+  }
+
+  const warnings = analysis.warnings.includes(
+    "전면 라벨의 주요 단백질원을 주의 성분에 반영했습니다.",
+  )
+    ? analysis.warnings
+    : [
+        ...analysis.warnings,
+        "전면 라벨의 주요 단백질원을 주의 성분에 반영했습니다.",
+      ].slice(0, 8);
+
+  return {
+    ...analysis,
+    ingredients: [...ingredients].slice(0, 40),
+    warnings,
+  };
 }

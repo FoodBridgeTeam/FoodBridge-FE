@@ -5,9 +5,9 @@ import {
   ITEM_IMAGE_MAX_BYTES,
 } from "@/features/foods/constants";
 import {
-  ITEM_IMAGE_ANALYSIS_PROMPT,
-  parseItemImageAnalysis,
-} from "@/features/foods/image-analysis";
+  getSymptomScreeningPrompt,
+  parseSymptomScreening,
+} from "@/features/matching/symptom-screening";
 import { getGeminiApiKey } from "@/lib/env";
 
 type GeminiGenerateContentResponse = {
@@ -37,17 +37,17 @@ function getAnalysisText(response: GeminiGenerateContentResponse) {
   );
 }
 
-function validateImageFile(file: FormDataEntryValue | null, label: string) {
+function validateImageFile(file: FormDataEntryValue | null) {
   if (!(file instanceof File) || file.size === 0) {
     return {
-      error: `${label}을 선택해 주세요.`,
+      error: "분석할 증상 사진을 선택해 주세요.",
       file: null,
     };
   }
 
   if (file.size > ITEM_IMAGE_MAX_BYTES) {
     return {
-      error: `${label}은 5MB 이하만 분석할 수 있습니다.`,
+      error: "증상 사진은 5MB 이하만 분석할 수 있습니다.",
       file: null,
     };
   }
@@ -80,43 +80,23 @@ export async function POST(request: Request) {
 
   if (!geminiApiKey) {
     return jsonError(
-      "GEMINI_API_KEY 환경변수가 없습니다. 키를 설정하면 사진 AI 분석을 사용할 수 있어요.",
+      "GEMINI_API_KEY 환경변수가 없습니다. 키를 설정하면 증상 사진 기록을 사용할 수 있어요.",
       503,
     );
   }
 
   const formData = await request.formData();
-  const productImageValidation = validateImageFile(
-    formData.get("image"),
-    "분석할 제품 사진",
-  );
+  const imageValidation = validateImageFile(formData.get("image"));
 
-  if (productImageValidation.error || !productImageValidation.file) {
-    return jsonError(productImageValidation.error, 400);
+  if (imageValidation.error || !imageValidation.file) {
+    return jsonError(imageValidation.error, 400);
   }
 
-  const ingredientImage = formData.get("ingredient_image");
-  const ingredientImageValidation =
-    ingredientImage instanceof File && ingredientImage.size > 0
-      ? validateImageFile(ingredientImage, "성분표 사진")
-      : { error: null, file: null };
-
-  if (ingredientImageValidation.error) {
-    return jsonError(ingredientImageValidation.error, 400);
-  }
-
-  const parts = [
-    { text: ITEM_IMAGE_ANALYSIS_PROMPT },
-    { text: "제품 전면/전체 사진입니다." },
-    await createInlineImagePart(productImageValidation.file),
-  ];
-
-  if (ingredientImageValidation.file) {
-    parts.push(
-      { text: "성분표 또는 원재료 라벨 사진입니다. 원재료 추출은 이 사진을 우선 사용하세요." },
-      await createInlineImagePart(ingredientImageValidation.file),
-    );
-  }
+  const prompt = getSymptomScreeningPrompt({
+    allergies: String(formData.get("allergies") ?? ""),
+    conditionNote: String(formData.get("condition_note") ?? ""),
+    species: String(formData.get("species") ?? ""),
+  });
 
   const response = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(geminiApiKey)}`,
@@ -124,7 +104,11 @@ export async function POST(request: Request) {
       body: JSON.stringify({
         contents: [
           {
-            parts,
+            parts: [
+              { text: prompt },
+              { text: "반려동물 증상 기록용 사진입니다. 진단하지 말고 관찰 가능한 징후만 정리하세요." },
+              await createInlineImagePart(imageValidation.file),
+            ],
           },
         ],
         generationConfig: {
@@ -144,23 +128,29 @@ export async function POST(request: Request) {
 
   if (!response.ok) {
     console.error(
-      "Gemini BobEum item image analysis failed:",
+      "Gemini BobEum symptom screening failed:",
       geminiResponse.error?.message ?? response.statusText,
     );
 
-    return jsonError("AI 사진 분석에 실패했습니다. 잠시 후 다시 시도해 주세요.", 502);
+    return jsonError(
+      "AI 증상 사진 기록에 실패했습니다. 잠시 후 다시 시도해 주세요.",
+      502,
+    );
   }
 
   try {
-    const analysisText = getAnalysisText(geminiResponse);
-    const analysis = parseItemImageAnalysis(analysisText);
+    const screeningText = getAnalysisText(geminiResponse);
+    const screening = parseSymptomScreening(
+      screeningText,
+      String(formData.get("condition_note") ?? ""),
+    );
 
-    return NextResponse.json({ analysis });
+    return NextResponse.json({ screening });
   } catch (error) {
-    console.error("Gemini BobEum item image analysis parse failed:", error);
+    console.error("Gemini BobEum symptom screening parse failed:", error);
 
     return jsonError(
-      "AI 응답을 해석하지 못했습니다. 수동 입력으로 등록해 주세요.",
+      "AI 응답을 해석하지 못했습니다. 건강/급여 메모에 직접 적어 주세요.",
       502,
     );
   }

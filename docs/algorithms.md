@@ -10,14 +10,14 @@ BobEum matching uses three scores:
 
 1. Compatibility score
 2. Distance score
-3. Expiry urgency score
+3. Donation priority score
 
 Final score:
 
 ```txt
 match_score = compatibility_score * 0.4
             + distance_score * 0.3
-            + urgency_score * 0.3
+            + donation_priority_score * 0.3
 ```
 
 All component scores are normalized from 0 to 100.
@@ -28,6 +28,7 @@ An item must be excluded from recommendations if any condition is true:
 
 - item.status is not `available`
 - item.expiry_date is before today
+- item is food/treat/prescription and item.expiry_date is less than 14 days away
 - distance is greater than 10km
 - compatibility is `unsuitable`
 - target species does not match pet species
@@ -96,11 +97,11 @@ Examples:
 | 10km | 0 |
 | 11km | excluded |
 
-## 5. Expiry Urgency Score
+## 5. Donation Priority Score
 
-Expired items are excluded.
+Expired items are excluded. Food, treats, and prescription diets with less than 14 days left before expiry are also excluded.
 
-For non-expired items, closer expiry gets higher urgency.
+For eligible food items, closer expiry increases donation priority only after the 14-day safety buffer is satisfied. This is a platform-side waste-reduction priority, not a claim that short-dated items are better for receivers.
 
 MVP default:
 
@@ -109,24 +110,22 @@ days_left = expiry_date - today
 
 if days_left < 0:
   exclude
-else if days_left <= 1:
-  urgency_score = 100
-else if days_left <= 3:
-  urgency_score = 85
-else if days_left <= 7:
-  urgency_score = 65
-else if days_left <= 14:
-  urgency_score = 40
+else if days_left < 14:
+  exclude
+else if days_left <= 21:
+  donation_priority_score = 100
 else if days_left <= 30:
-  urgency_score = 20
+  donation_priority_score = 70
+else if days_left <= 60:
+  donation_priority_score = 35
 else:
-  urgency_score = 10
+  donation_priority_score = 10
 ```
 
 For non-food supplies:
 
 ```txt
-urgency_score = 0
+donation_priority_score = 0
 ```
 
 ## 6. Compatibility Labels
@@ -199,11 +198,17 @@ Adjustments:
 - species mismatch: force unsuitable, score 0
 - expired item: force unsuitable, score 0
 - prescription diet and pet condition mismatch: force unsuitable or conditional
-- missing ingredients for food: conditional at best
+- missing ingredients for food: conditional at best; registration should require an ingredient label image for edible categories before this fallback is needed
 - unknown opened date for opened food: conditional at best
 ```
 
 For MVP, use AI to produce a candidate compatibility result, then apply deterministic hard rules.
+
+Safety UX requirements:
+
+- AI compatibility is advisory and must not be presented as a guarantee.
+- Show the original ingredient label image and extracted ingredient tokens on the recommendation card when available.
+- Require receiver-side confirmation before reservation: the receiver reviewed the ingredient label, allergy information, and pet health context.
 
 ## 8. Allergy Matching
 
@@ -251,6 +256,34 @@ If any normalized allergy token appears in normalized ingredients:
 compatibility = unsuitable
 score = 0
 reason includes allergy conflict
+```
+
+## 8.1 Symptom Photo Screening Guardrails
+
+Optional symptom photo screening is a non-diagnostic helper.
+
+Allowed behavior:
+
+- record visible, non-diagnostic observation tags
+- summarize guardian-entered feeding/health context
+- normalize guardian-provided or memo-mentioned ingredient names into caution candidates
+- separate negatively described ingredients from recently tolerated or positively described ingredients
+- let the guardian explicitly apply caution candidates to recommendation filtering
+
+Forbidden behavior:
+
+- diagnosing allergy, dermatitis, infection, or disease
+- claiming a symptom was caused by a specific ingredient
+- inferring a food ingredient from a symptom photo alone
+- treating an ingredient as a caution candidate when the memo says the pet improved or had no issue after eating it
+- guaranteeing safety
+
+If a caution candidate is applied by the guardian and appears in item ingredients:
+
+```txt
+compatibility = unsuitable
+score = 0
+reason includes symptom-record caution candidate conflict
 ```
 
 ## 9. Species Matching

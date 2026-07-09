@@ -13,6 +13,7 @@ const now = new Date("2030-07-07T00:00:00.000Z");
 const pet: ReceiverProfile = {
   age: 4,
   allergies: ["닭고기"],
+  cautionIngredients: [],
   conditionNote: null,
   isPrescriptionDiet: false,
   latitude: 35.1338,
@@ -20,6 +21,9 @@ const pet: ReceiverProfile = {
   name: "콩이",
   petId: "demo-kongi",
   species: "dog",
+  symptomSummary: null,
+  symptomTags: [],
+  toleratedIngredients: [],
   weight: 5,
 };
 
@@ -29,7 +33,7 @@ function createItem(overrides: Partial<TestItem> = {}): TestItem {
   return {
     category: "dry_food",
     created_at: "2030-07-06T00:00:00.000Z",
-    expiry_date: "2030-07-10",
+    expiry_date: "2030-07-25",
     id: "item-1",
     ingredients: ["연어", "쌀"],
     latitude: 35.134,
@@ -61,8 +65,22 @@ describe("calculateMatchScore", () => {
     expect(result.compatibility).toBe("suitable");
     expect(result.compatibilityScore).toBe(100);
     expect(result.distanceScore).toBeGreaterThan(99);
-    expect(result.urgencyScore).toBe(85);
+    expect(result.urgencyScore).toBe(100);
     expect(result.matchScore).toBeGreaterThan(80);
+  });
+
+  it("excludes food items with less than 14 days left before expiry", () => {
+    const result = calculateMatchScore(
+      createItem({ expiry_date: "2030-07-20" }),
+      pet,
+      new Date("2030-07-07T12:00:00.000Z"),
+    );
+
+    expect(result.excluded).toBe(true);
+    expect(result.exclusionReasons).toContain(
+      "수령·확인·급여 시간을 위해 유통기한이 14일 미만 남은 사료·간식은 추천하지 않습니다.",
+    );
+    expect(result.matchScore).toBe(0);
   });
 
   it("excludes allergy conflicts", () => {
@@ -75,6 +93,37 @@ describe("calculateMatchScore", () => {
     expect(result.excluded).toBe(true);
     expect(result.compatibility).toBe("unsuitable");
     expect(result.matchScore).toBe(0);
+  });
+
+  it("excludes symptom-screening caution ingredient conflicts", () => {
+    const result = calculateMatchScore(
+      createItem({ ingredients: ["소고기", "쌀"] }),
+      {
+        ...pet,
+        allergies: [],
+        cautionIngredients: ["소고기"],
+      },
+      now,
+    );
+
+    expect(result.excluded).toBe(true);
+    expect(result.compatibility).toBe("unsuitable");
+    expect(result.compatibilityReason).toContain("증상 기록 기반 주의 후보");
+  });
+
+  it("does not exclude recently tolerated ingredients", () => {
+    const result = calculateMatchScore(
+      createItem({ ingredients: ["소고기", "쌀"] }),
+      {
+        ...pet,
+        allergies: [],
+        toleratedIngredients: ["소고기"],
+      },
+      now,
+    );
+
+    expect(result.excluded).toBe(false);
+    expect(result.compatibilityReason).toContain("최근 문제 없이 급여된 후보");
   });
 
   it("excludes items outside the recommended distance", () => {

@@ -104,7 +104,7 @@ export function MatchingAlertCard({ foods }: MatchingAlertCardProps) {
           </dd>
         </div>
         <div className="brand-card-flat p-4 transition hover:-translate-y-0.5">
-          <dt className="text-sm font-black text-orange-700">가장 긴급</dt>
+          <dt className="text-sm font-black text-orange-700">폐기 방지 우선</dt>
           <dd className="mt-2 text-lg font-black text-black">
             {urgentFood?.name}
           </dd>

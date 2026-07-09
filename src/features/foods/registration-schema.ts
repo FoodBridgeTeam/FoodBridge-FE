@@ -19,6 +19,16 @@ const targetSpeciesValues = TARGET_SPECIES_OPTIONS.map(
   ...(typeof TARGET_SPECIES_OPTIONS)[number]["value"][],
 ];
 
+const INGREDIENT_LABEL_REQUIRED_CATEGORIES = new Set([
+  "dry_food",
+  "wet_food",
+  "treat",
+  "prescription",
+  "unknown",
+]);
+
+const MINIMUM_FOOD_EXPIRY_DAYS = 14;
+
 const requiredNumber = (message: string, constraints: z.ZodNumber) =>
   z.preprocess(
     (value) => (value === "" || value === null ? undefined : value),
@@ -122,11 +132,37 @@ const itemRegistrationSchema = z
   })
   .superRefine((value, context) => {
     const isFoodCategory = value.category !== "supply";
+    const requiresIngredientLabel = INGREDIENT_LABEL_REQUIRED_CATEGORIES.has(
+      value.category,
+    );
+    const now = new Date();
+    const todayStartMs = new Date(now).setHours(0, 0, 0, 0);
+    const minimumFoodExpiryMs = new Date(now).setDate(
+      new Date(now).getDate() + MINIMUM_FOOD_EXPIRY_DAYS,
+    );
+    const minimumFoodExpiryStartMs = new Date(minimumFoodExpiryMs).setHours(
+      0,
+      0,
+      0,
+      0,
+    );
+    const openedAtMs =
+      value.opened_at === null ? null : new Date(value.opened_at).getTime();
+    const expiryDateMs =
+      value.expiry_date === null ? null : new Date(value.expiry_date).getTime();
 
     if (value.opened === "true" && value.opened_at === null) {
       context.addIssue({
         code: "custom",
         message: "개봉한 사료·간식은 개봉 시점을 입력해 주세요.",
+        path: ["opened_at"],
+      });
+    }
+
+    if (openedAtMs !== null && openedAtMs > now.getTime()) {
+      context.addIssue({
+        code: "custom",
+        message: "개봉일은 현재 시점보다 미래일 수 없습니다.",
         path: ["opened_at"],
       });
     }
@@ -140,13 +176,53 @@ const itemRegistrationSchema = z
     }
 
     if (
-      value.expiry_date !== null &&
-      new Date(value.expiry_date).getTime() < new Date().setHours(0, 0, 0, 0)
+      requiresIngredientLabel &&
+      !(
+        value.ingredient_image instanceof File &&
+        value.ingredient_image.size > 0
+      )
+    ) {
+      context.addIssue({
+        code: "custom",
+        message:
+          "사료·간식·처방식은 알러지 확인을 위해 성분표 사진을 업로드해 주세요. 용품은 선택입니다.",
+        path: ["ingredient_image"],
+      });
+    }
+
+    if (
+      expiryDateMs !== null &&
+      expiryDateMs < todayStartMs
     ) {
       context.addIssue({
         code: "custom",
         message: "유통기한이 지난 물품은 나눔 등록할 수 없습니다.",
         path: ["expiry_date"],
+      });
+    }
+
+    if (
+      isFoodCategory &&
+      expiryDateMs !== null &&
+      expiryDateMs < minimumFoodExpiryStartMs
+    ) {
+      context.addIssue({
+        code: "custom",
+        message:
+          "사료·간식은 안전한 수령과 급여 시간을 위해 유통기한이 14일 이상 남아야 등록할 수 있습니다.",
+        path: ["expiry_date"],
+      });
+    }
+
+    if (
+      openedAtMs !== null &&
+      expiryDateMs !== null &&
+      openedAtMs > expiryDateMs
+    ) {
+      context.addIssue({
+        code: "custom",
+        message: "개봉일은 유통기한보다 뒤일 수 없습니다.",
+        path: ["opened_at"],
       });
     }
   })
