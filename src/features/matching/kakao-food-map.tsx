@@ -219,7 +219,7 @@ export function KakaoFoodMap({
       <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-end">
         <div>
           <p className="text-xs font-black tracking-[0.14em] text-emerald-200 uppercase">
-            Kakao Maps
+            카카오 지도
           </p>
           <h2 className="mt-2 text-2xl font-black">픽업 위치 지도</h2>
         </div>

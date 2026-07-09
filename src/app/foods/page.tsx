@@ -71,12 +71,8 @@ export default async function FoodsPage({ searchParams }: FoodsPageProps) {
           </Link>
           <div className="text-sm font-black text-slate-500 md:text-base">
             BobEum <span className="mx-2 text-[var(--line)]">/</span>
-            <span className="text-black">Matching</span>
+            <span className="text-black">매칭</span>
           </div>
-        </div>
-        <div className="brand-search">
-          <span>⌕</span>
-          <span>Search pet-compatible sharing...</span>
         </div>
         <Link className="brand-button" href="/foods/new">
           + 나눔 등록
@@ -84,11 +80,11 @@ export default async function FoodsPage({ searchParams }: FoodsPageProps) {
       </nav>
 
       <header className="brand-card animate-fade-up-delay-1 p-7 md:p-10">
-        <p className="brand-kicker">Pet profile · AI matching</p>
+        <p className="brand-kicker">반려동물 프로필 · AI 매칭</p>
         <h1 className="brand-heading mt-5 text-5xl md:text-7xl">
-          MATCHING
+          매칭
           <br />
-          OVERVIEW
+          현황
         </h1>
         <p className="mt-5 max-w-3xl text-lg font-bold leading-8 text-slate-600">
           10km 이내 사료·간식·용품을 대상으로 반려동물 종, 알러지, 처방식
@@ -116,7 +112,7 @@ export default async function FoodsPage({ searchParams }: FoodsPageProps) {
       <section className="mt-10">
         <div className="mb-5 flex items-end justify-between gap-4">
           <div>
-            <p className="brand-kicker">AI matching</p>
+            <p className="brand-kicker">AI 매칭</p>
             <h2 className="mt-2 text-3xl font-black text-black">
               추천 결과
             </h2>

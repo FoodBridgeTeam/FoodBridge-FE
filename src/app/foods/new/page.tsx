@@ -18,24 +18,20 @@ export default function NewFoodPage() {
           </Link>
           <div className="text-sm font-black text-slate-500 md:text-base">
             BobEum <span className="mx-2 text-[var(--line)]">/</span>
-            <span className="text-black">Register</span>
+            <span className="text-black">등록</span>
           </div>
         </div>
-        <div className="brand-search">
-          <span>⌕</span>
-          <span>Upload item photo first...</span>
-        </div>
-        <Link className="brand-avatar" href="/foods">
-          AI
+        <Link className="brand-button-soft" href="/foods">
+          추천 목록
         </Link>
       </nav>
 
       <header className="brand-card animate-fade-up-delay-1 mb-10 p-7 md:p-10">
-        <p className="brand-kicker">Giver · AI assisted</p>
+        <p className="brand-kicker">나눔자 · AI 지원</p>
         <h1 className="brand-heading mt-5 text-5xl md:text-6xl">
-          REGISTER
+          나눔
           <br />
-          SHARING
+          등록
         </h1>
         <p className="mt-5 max-w-3xl text-lg font-bold leading-8 text-slate-600">
           사진 한 장으로 제품명, 성분, 대상 동물, 유통기한 후보를 채우고

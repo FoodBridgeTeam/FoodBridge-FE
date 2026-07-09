@@ -273,7 +273,7 @@ export function FoodRegistrationForm() {
     <form action={formAction} className="space-y-8">
       <section className="brand-card animate-fade-up p-6 md:p-8">
         <p className="brand-kicker">
-          Step 1 · AI registration helper
+          1단계 · AI 등록 도우미
         </p>
         <h2 className="mt-3 text-3xl font-black text-black">
           사진으로 먼저 등록하기
@@ -367,7 +367,7 @@ export function FoodRegistrationForm() {
 
       <section className="brand-card animate-fade-up-delay-1 p-6 md:p-8">
         <p className="brand-kicker">
-          Step 2 · Review and submit
+          2단계 · 확인 및 제출
         </p>
         <h2 className="mt-3 text-3xl font-black text-black">
           입력값 확인하기
@@ -564,7 +564,7 @@ export function FoodRegistrationForm() {
 
       <section className="brand-card animate-fade-up-delay-2 p-6 md:p-8">
         <p className="brand-kicker">
-          Step 3 · Pickup location
+          3단계 · 픽업 위치
         </p>
         <h2 className="mt-3 text-3xl font-black text-black">
           픽업 위치 등록

@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 
+import { BellIcon } from "@/components/icons";
 import { createClient } from "@/lib/supabase/server";
 import type { Tables } from "@/types/database";
 
@@ -20,28 +21,28 @@ type FeaturedItem = Pick<
 
 const overviewCards = [
   {
-    label: "AI safety checks",
+    label: "AI 안전 점검",
     title: "성분 궁합",
     value: "40%",
     delta: "+ 알러지 우선 필터",
     tone: "green",
   },
   {
-    label: "Pickup radius",
+    label: "픽업 반경",
     title: "거리 추천",
     value: "10km",
     delta: "가까운 나눔 우선",
     tone: "orange",
   },
   {
-    label: "Registration helper",
+    label: "등록 도우미",
     title: "사진 분석",
     value: "Gemini",
     delta: "제품명·성분 자동 입력",
     tone: "green",
   },
   {
-    label: "Sharing status",
+    label: "나눔 상태",
     title: "상태 관리",
     value: "3단계",
     delta: "등록 · 예약 · 완료",
@@ -93,28 +94,19 @@ async function getFeaturedItem(): Promise<FeaturedItem | null> {
 function TopNav() {
   return (
     <nav className="brand-nav animate-fade-up">
-      <div className="flex items-center gap-3">
-        <Link aria-label="메뉴" className="brand-nav-button" href="/">
-          ☰
-        </Link>
-        <div className="text-sm font-black text-slate-500 md:text-base">
-          BobEum <span className="mx-2 text-[var(--line)]">/</span>
-          <span className="text-black">Overview</span>
-        </div>
-      </div>
-      <div className="brand-search">
-        <span>⌕</span>
-        <span>Search sharing workspace...</span>
+      <div className="text-sm font-black text-slate-500 md:text-base">
+        BobEum <span className="mx-2 text-[var(--line)]">/</span>
+        <span className="text-black">개요</span>
       </div>
       <div className="flex items-center gap-3">
         <Link className="brand-nav-button relative" href="/foods">
-          🔔
+          <BellIcon className="size-5" />
           <span className="absolute -right-1 -top-1 grid size-6 place-items-center rounded-full bg-[var(--accent)] text-xs text-white">
             3
           </span>
         </Link>
-        <Link className="brand-avatar" href="/foods/new">
-          BE
+        <Link className="brand-button-soft" href="/foods/new">
+          + 나눔 등록
         </Link>
       </div>
     </nav>
@@ -172,7 +164,7 @@ function FeaturedItemCard({ item }: { item: FeaturedItem | null }) {
         <div className="flex items-center justify-between gap-4">
           <span className="brand-pill brand-pill-orange">긴급 매칭</span>
           <strong className="text-3xl font-black text-[var(--accent)]">
-            {item ? "LIVE" : "DEMO"}
+            {item ? "실시간" : "데모"}
           </strong>
         </div>
 
@@ -221,11 +213,11 @@ export default async function Home() {
 
       <section className="grid gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-start">
         <div>
-          <p className="brand-kicker animate-fade-up">Pet sharing dashboard</p>
+          <p className="brand-kicker animate-fade-up">반려동물 나눔 대시보드</p>
           <h1 className="brand-heading animate-fade-up-delay-1 mt-5 text-5xl md:text-7xl">
             BOBEUM
             <br />
-            OVERVIEW
+            개요
           </h1>
           <p className="animate-fade-up-delay-2 mt-6 max-w-2xl text-xl font-bold leading-9 text-slate-600">
             안 맞아서 남은 반려동물 사료·간식·용품을 AI 성분 분석과 궁합
@@ -254,7 +246,7 @@ export default async function Home() {
       <section className="brand-card mt-12 p-6 md:p-8">
         <div className="flex flex-col justify-between gap-5 md:flex-row md:items-end">
           <div>
-            <p className="brand-kicker">Service flow</p>
+            <p className="brand-kicker">서비스 흐름</p>
             <h2 className="mt-3 text-3xl font-black text-black md:text-4xl">
               시연 흐름
             </h2>

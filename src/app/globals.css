@@ -148,8 +148,7 @@ a {
   box-shadow: 0 2px 0 rgb(6 69 47 / 0.16);
 }
 
-.brand-nav-button,
-.brand-avatar {
+.brand-nav-button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -161,27 +160,6 @@ a {
   color: var(--foreground);
   font-weight: 900;
   box-shadow: 0 2px 0 rgb(6 69 47 / 0.14);
-}
-
-.brand-avatar {
-  border-color: #98e6b1;
-  border-radius: 999px;
-  color: var(--accent);
-}
-
-.brand-search {
-  display: none;
-  min-width: 16rem;
-  max-width: 32rem;
-  flex: 1;
-  align-items: center;
-  gap: 0.65rem;
-  border: 2px solid var(--line);
-  border-radius: 1.25rem;
-  background: #fff7e8;
-  padding: 0.8rem 1rem;
-  color: var(--muted);
-  font-weight: 800;
 }
 
 .brand-card,
@@ -325,12 +303,6 @@ a {
 .brand-orange-line {
   background: linear-gradient(to right, rgb(255 122 26 / 0.18), transparent);
   clip-path: polygon(0 35%, 22% 42%, 44% 50%, 68% 58%, 100% 66%, 100% 100%, 0 100%);
-}
-
-@media (min-width: 768px) {
-  .brand-search {
-    display: flex;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -1,3 +1,4 @@
+import { BellIcon } from "@/components/icons";
 import type { MatchScore } from "@/features/matching/calculate-match-score";
 import type { Tables } from "@/types/database";
 
@@ -56,12 +57,12 @@ export function MatchingAlertCard({ foods }: MatchingAlertCardProps) {
     return (
       <section className="brand-card animate-fade-up-delay-1 p-5">
         <div className="flex gap-4">
-          <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl border-2 border-[var(--line)] bg-orange-100 text-2xl">
-            🔔
+          <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl border-2 border-[var(--line)] bg-orange-100 text-orange-700">
+            <BellIcon className="size-6" />
           </div>
           <div>
             <p className="brand-kicker">
-              Matching Alert
+              매칭 알림
             </p>
             <h2 className="mt-2 text-2xl font-black text-black">
               현재 반경 10km 안에 추천 가능한 나눔이 없습니다
@@ -80,10 +81,11 @@ export function MatchingAlertCard({ foods }: MatchingAlertCardProps) {
     <section className="brand-panel-dark animate-fade-up-delay-1 overflow-hidden p-0">
       <div className="px-6 py-6 text-white">
         <p className="text-xs font-black tracking-[0.16em] text-emerald-200 uppercase">
-          Matching Alert
+          매칭 알림
         </p>
-        <h2 className="mt-1 text-2xl font-black">
-          🔔 현재 위치 기준 맞춤 나눔 {recommendedFoods.length}개 발견
+        <h2 className="mt-1 flex items-center gap-2 text-2xl font-black">
+          <BellIcon className="size-5" />
+          현재 위치 기준 맞춤 나눔 {recommendedFoods.length}개 발견
         </h2>
         <p className="mt-2 text-sm text-emerald-50/80">
           가장 추천되는 나눔은 {topFood.name}입니다. 지도에서 사진 마커를
